@@ -10021,9 +10021,9 @@ one or the other!</text>
 <junction x="414.02" y="228.6"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="32/A13"/>
-<wire x1="63.5" y1="30.48" x2="60.96" y2="30.48" width="0.1524" layer="91"/>
-<label x="60.96" y="30.48" size="1.778" layer="95" rot="R180" xref="yes"/>
+<pinref part="U$1" gate="G$1" pin="36/A17"/>
+<wire x1="104.14" y1="38.1" x2="106.68" y2="38.1" width="0.1524" layer="91"/>
+<label x="106.68" y="38.1" size="1.778" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="B.SW2" class="0">
@@ -10144,9 +10144,9 @@ one or the other!</text>
 <junction x="414.02" y="139.7"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="39/A20"/>
-<wire x1="104.14" y1="45.72" x2="106.68" y2="45.72" width="0.1524" layer="91"/>
-<label x="106.68" y="45.72" size="1.778" layer="95" xref="yes"/>
+<pinref part="U$1" gate="G$1" pin="32/A13"/>
+<wire x1="63.5" y1="30.48" x2="60.96" y2="30.48" width="0.1524" layer="91"/>
+<label x="60.96" y="30.48" size="1.778" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="C.SW2" class="0">
@@ -10171,9 +10171,9 @@ one or the other!</text>
 <junction x="411.48" y="129.54"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="38/A19"/>
-<wire x1="104.14" y1="43.18" x2="106.68" y2="43.18" width="0.1524" layer="91"/>
-<label x="106.68" y="43.18" size="1.778" layer="95" xref="yes"/>
+<pinref part="U$1" gate="G$1" pin="39/A20"/>
+<wire x1="104.14" y1="45.72" x2="106.68" y2="45.72" width="0.1524" layer="91"/>
+<label x="106.68" y="45.72" size="1.778" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="C.M1" class="0">
@@ -10183,9 +10183,9 @@ one or the other!</text>
 <label x="345.44" y="142.24" size="1.778" layer="95" rot="R180" xref="yes"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="37/A18"/>
-<wire x1="104.14" y1="40.64" x2="106.68" y2="40.64" width="0.1524" layer="91"/>
-<label x="106.68" y="40.64" size="1.778" layer="95" xref="yes"/>
+<pinref part="U$1" gate="G$1" pin="38/A19"/>
+<wire x1="104.14" y1="43.18" x2="106.68" y2="43.18" width="0.1524" layer="91"/>
+<label x="106.68" y="43.18" size="1.778" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="C.M2" class="0">
@@ -10195,9 +10195,9 @@ one or the other!</text>
 <label x="345.44" y="139.7" size="1.778" layer="95" rot="R180" xref="yes"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="36/A17"/>
-<wire x1="104.14" y1="38.1" x2="106.68" y2="38.1" width="0.1524" layer="91"/>
-<label x="106.68" y="38.1" size="1.778" layer="95" xref="yes"/>
+<pinref part="U$1" gate="G$1" pin="37/A18"/>
+<wire x1="104.14" y1="40.64" x2="106.68" y2="40.64" width="0.1524" layer="91"/>
+<label x="106.68" y="40.64" size="1.778" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="N$31" class="0">
