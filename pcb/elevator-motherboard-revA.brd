@@ -157,10 +157,58 @@
 </layers>
 <board>
 <plain>
-<wire x1="0" y1="0" x2="148" y2="0" width="0" layer="20"/>
-<wire x1="148" y1="0" x2="148" y2="100" width="0" layer="20"/>
-<wire x1="148" y1="100" x2="0" y2="100" width="0" layer="20"/>
+<wire x1="0" y1="0" x2="148" y2="-0.127" width="0" layer="20"/>
+<wire x1="148" y1="-0.127" x2="148" y2="99.873" width="0" layer="20"/>
+<wire x1="148" y1="99.873" x2="0" y2="100" width="0" layer="20"/>
 <wire x1="0" y1="100" x2="0" y2="0" width="0" layer="20"/>
+<wire x1="148.082" y1="55.499" x2="133.858" y2="55.499" width="0.508" layer="21"/>
+<wire x1="133.858" y1="55.499" x2="133.731" y2="55.499" width="0.508" layer="21"/>
+<wire x1="133.731" y1="55.499" x2="133.731" y2="0" width="0.508" layer="21"/>
+<wire x1="133.858" y1="55.499" x2="133.858" y2="85.725" width="0.508" layer="21"/>
+<wire x1="133.858" y1="85.725" x2="133.858" y2="100.076" width="0.508" layer="21"/>
+<wire x1="133.858" y1="100.076" x2="133.985" y2="100.076" width="0.508" layer="21"/>
+<wire x1="116.332" y1="99.822" x2="116.332" y2="85.725" width="0.508" layer="21"/>
+<wire x1="116.332" y1="85.725" x2="133.858" y2="85.725" width="0.508" layer="21"/>
+<wire x1="116.332" y1="85.725" x2="42.037" y2="85.725" width="0.508" layer="21"/>
+<wire x1="42.037" y1="85.725" x2="0.127" y2="85.725" width="0.508" layer="21"/>
+<wire x1="42.037" y1="85.725" x2="42.037" y2="99.949" width="0.508" layer="21"/>
+<wire x1="80.264" y1="85.852" x2="80.264" y2="99.949" width="0.508" layer="21"/>
+<wire x1="133.604" y1="34.163" x2="31.242" y2="34.163" width="0.508" layer="21"/>
+<wire x1="31.242" y1="34.163" x2="31.242" y2="16.637" width="0.508" layer="21"/>
+<wire x1="31.242" y1="16.637" x2="31.242" y2="0" width="0.508" layer="21"/>
+<wire x1="0.127" y1="36.322" x2="8.509" y2="36.322" width="0.508" layer="21"/>
+<wire x1="8.509" y1="36.322" x2="8.509" y2="16.51" width="0.508" layer="21"/>
+<wire x1="8.509" y1="16.51" x2="0" y2="16.51" width="0.508" layer="21"/>
+<wire x1="8.763" y1="16.637" x2="31.242" y2="16.637" width="0.508" layer="21"/>
+<text x="115.57" y="29.845" size="2.54" layer="21" ratio="15">DOOR A</text>
+<text x="90.805" y="29.845" size="2.54" layer="21" ratio="15">DOOR B</text>
+<text x="64.008" y="29.845" size="2.54" layer="21" ratio="15">DOOR C</text>
+<text x="37.592" y="29.845" size="2.54" layer="21" ratio="15">DOOR D</text>
+<text x="50.546" y="90.17" size="2.54" layer="21" ratio="15" rot="SR180">LED1</text>
+<text x="68.072" y="89.535" size="2.54" layer="21" ratio="15" rot="SR180">LED2</text>
+<text x="101.727" y="90.043" size="2.54" layer="21" ratio="15" rot="SR180">RGBW</text>
+<text x="123.698" y="90.17" size="2.54" layer="21" ratio="15" rot="SR180">UV</text>
+<text x="12.446" y="2.032" size="2.54" layer="21" ratio="15">IO PANEL</text>
+<text x="137.541" y="36.576" size="2.54" layer="21" ratio="15" rot="R90">24V</text>
+<text x="137.541" y="72.009" size="2.54" layer="21" ratio="15" rot="R90">12V</text>
+<text x="24.892" y="89.408" size="2.54" layer="21" ratio="15" rot="SR180">5V</text>
+<text x="86.487" y="46.99" size="1.27" layer="21" ratio="15">5V</text>
+<text x="90.805" y="46.99" size="1.27" layer="21" ratio="15">12V</text>
+<text x="96.012" y="46.99" size="1.27" layer="21" ratio="15">VCC</text>
+<text x="101.092" y="46.99" size="1.27" layer="21" ratio="15">24V</text>
+<text x="140.081" y="59.436" size="1.27" layer="21" ratio="15" rot="R90">12V     G     24V</text>
+<text x="37.592" y="91.821" size="1.27" layer="21" ratio="15" rot="SR180">5V     G     24V</text>
+<text x="54.61" y="92.456" size="1.27" layer="21" ratio="15" rot="SR180">5V   D   G</text>
+<text x="71.374" y="92.583" size="1.27" layer="21" ratio="15" rot="SR180">5V   D   G</text>
+<text x="106.172" y="92.202" size="1.27" layer="21" ratio="15" rot="SR180">+</text>
+<text x="124.333" y="92.329" size="1.27" layer="21" ratio="15" rot="SR180">+</text>
+<text x="132.08" y="97.155" size="1.27" layer="21" ratio="15" rot="SR270">24V  12V</text>
+<text x="114.173" y="97.409" size="1.27" layer="21" ratio="15" rot="SR270">24V  12V</text>
+<text x="136.652" y="87.249" size="1.27" layer="21" ratio="15" rot="R270">12V    G</text>
+<text x="136.652" y="34.29" size="1.27" layer="21" ratio="15" rot="R270">24V    G</text>
+<text x="136.652" y="18.542" size="1.27" layer="21" ratio="15" rot="R270">24V    G</text>
+<text x="18.288" y="90.043" size="1.27" layer="21" ratio="15" rot="SR180">5V     G</text>
+<text x="6.477" y="19.558" size="1.143" layer="21" ratio="15" rot="R90">V  G  P1 P2 P3 P4</text>
 </plain>
 <libraries>
 <library name="microbuilder">
@@ -1357,10 +1405,7 @@ design rules under a new name.</description>
 <attribute name="NAME" x="53.364" y="88.287" size="0.8128" layer="25" ratio="18" rot="R180"/>
 <attribute name="VALUE" x="53.364" y="88.795" size="0.4064" layer="27" ratio="10" rot="R180"/>
 </element>
-<element name="PL1" library="con-phoenix-381_l" package="MC3" value="MC3" x="50.59" y="94.933" smashed="yes" rot="R180">
-<attribute name="NAME" x="55.67" y="92.393" size="1.27" layer="21" rot="R180"/>
-<attribute name="VALUE" x="55.67" y="99.378" size="1.27" layer="21" rot="R180"/>
-</element>
+<element name="PL1" library="con-phoenix-381_l" package="MC3" value="MC3" x="50.59" y="94.933" smashed="yes" rot="R180"/>
 <element name="U$1" library="Teensy356" package="TEENSY_3.5/3.6_BASIC" value="TEENSY_3.5/3.6_BASIC" x="29.718" y="53.054" smashed="yes"/>
 <element name="J6" library="SparkFun-Connectors" library_urn="urn:adsk.eagle:library:513" package="POWER_JACK_PTH" package3d_urn="urn:adsk.eagle:package:38231/1" value="POWER_JACK" x="151.018" y="48.753" smashed="yes" rot="R90">
 <attribute name="NAME" x="149.1892" y="47.3814" size="0.6096" layer="25" font="vector" ratio="20" rot="R90"/>
@@ -1368,7 +1413,6 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="150.2052" y="47.0004" size="0.6096" layer="27" font="vector" ratio="20" rot="R90"/>
 </element>
 <element name="OUT1" library="con-phoenix-381_l" package="MC4" value="MC4" x="142.824" y="66.31" smashed="yes" rot="R90">
-<attribute name="NAME" x="140.284" y="59.325" size="1.27" layer="21" rot="R90"/>
 <attribute name="VALUE" x="147.269" y="59.325" size="1.27" layer="21" rot="R90"/>
 </element>
 <element name="J2" library="SparkFun-Connectors" package="2X6-SHROUDED" value="" x="18.83" y="10.99" smashed="yes" rot="R90">
@@ -1376,22 +1420,19 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="31.149" y="6.672" size="0.6096" layer="27" font="vector" ratio="20" rot="R90"/>
 </element>
 <element name="U4" library="Custom" package="TSSOP8" value="74HC2G125" x="56" y="81" smashed="yes">
-<attribute name="NAME" x="54.476" y="83.159" size="0.8128" layer="25" ratio="18"/>
+<attribute name="NAME" x="54.984" y="77.698" size="1.27" layer="25" ratio="18"/>
 <attribute name="VALUE" x="54.476" y="82.651" size="0.4064" layer="27" ratio="10"/>
 </element>
 <element name="Q2" library="SparkFun-DiscreteSemi" package="SO08" value="MOSFET_NCH_DUAL-SO08" x="72.709" y="23.876" smashed="yes" rot="R270">
-<attribute name="NAME" x="72.709" y="27.051" size="0.6096" layer="25" font="vector" ratio="20" align="bottom-center"/>
-<attribute name="VALUE" x="72.709" y="20.066" size="0.6096" layer="27" font="vector" ratio="20" align="bottom-center"/>
+<attribute name="NAME" x="72.709" y="27.051" size="1.27" layer="25" font="vector" ratio="15" align="bottom-center"/>
 </element>
 <element name="F2" library="adafruit" library_urn="urn:adsk.eagle:library:420" package="R1206" package3d_urn="urn:adsk.eagle:package:6240569@1/1" value="" x="72.709" y="18.288" smashed="yes" rot="R180">
-<attribute name="NAME" x="74.106" y="17.145" size="1.27" layer="25" rot="R180"/>
+<attribute name="NAME" x="73.598" y="17.018" size="1.27" layer="25" ratio="15" rot="R180"/>
 <attribute name="VALUE" x="74.106" y="20.701" size="1.27" layer="27" rot="R180"/>
 </element>
 <element name="J3" library="SparkFun-Connectors" library_urn="urn:adsk.eagle:library:513" package="MAGJACK" package3d_urn="urn:adsk.eagle:package:38215/1" value="MAGJACK" x="61.533" y="-5.842" smashed="yes">
-<attribute name="NAME" x="67.248" y="7.493" size="0.6096" layer="25" font="vector" ratio="20"/>
 <attribute name="PROD_ID" value="CONN-09556" x="42.483" y="3.048" size="1.778" layer="27" display="off"/>
 <attribute name="SF_ID" value="PRT-08534" x="42.483" y="3.048" size="1.778" layer="27" display="off"/>
-<attribute name="VALUE" x="67.248" y="6.223" size="0.6096" layer="27" font="vector" ratio="20"/>
 </element>
 <element name="C4" library="microbuilder" package="0603" value="0.1uF" x="64.835" y="25.019" smashed="yes">
 <attribute name="NAME" x="66.613" y="24.892" size="0.8128" layer="25" font="vector" ratio="18"/>
@@ -1402,8 +1443,7 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="63.184" y="23.114" size="0.4064" layer="27" font="vector" ratio="10" rot="R180"/>
 </element>
 <element name="U2" library="shlomo" package="SOT23-5L" value="TPD2E001" x="66.486" y="18.288" smashed="yes" rot="R270">
-<attribute name="NAME" x="68.391" y="20.193" size="1.27" layer="25" rot="R270"/>
-<attribute name="VALUE" x="63.057" y="20.193" size="1.27" layer="27" rot="R270"/>
+<attribute name="NAME" x="65.659" y="15.432" size="1.27" layer="25" ratio="15"/>
 </element>
 <element name="C6" library="microbuilder" package="0603" value="0.1uF" x="62.676" y="18.288" smashed="yes" rot="R90">
 <attribute name="NAME" x="62.803" y="20.066" size="0.8128" layer="25" font="vector" ratio="18" rot="R90"/>
@@ -1418,18 +1458,15 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="57.342" y="5.588" size="1.27" layer="27" rot="R270"/>
 </element>
 <element name="Q4" library="SparkFun-DiscreteSemi" package="SO08" value="MOSFET_NCH_DUAL-SO08" x="124.998" y="24.003" smashed="yes" rot="R270">
-<attribute name="NAME" x="124.998" y="27.178" size="0.6096" layer="25" font="vector" ratio="20" align="bottom-center"/>
-<attribute name="VALUE" x="124.998" y="20.193" size="0.6096" layer="27" font="vector" ratio="20" align="bottom-center"/>
+<attribute name="NAME" x="124.998" y="27.178" size="1.27" layer="25" font="vector" ratio="15" align="bottom-center"/>
 </element>
 <element name="F4" library="adafruit" library_urn="urn:adsk.eagle:library:420" package="R1206" package3d_urn="urn:adsk.eagle:package:6240569@1/1" value="" x="124.998" y="18.415" smashed="yes" rot="R180">
-<attribute name="NAME" x="126.395" y="17.272" size="1.27" layer="25" rot="R180"/>
+<attribute name="NAME" x="125.887" y="17.018" size="1.27" layer="25" ratio="15" rot="R180"/>
 <attribute name="VALUE" x="126.395" y="20.828" size="1.27" layer="27" rot="R180"/>
 </element>
 <element name="J5" library="SparkFun-Connectors" library_urn="urn:adsk.eagle:library:513" package="MAGJACK" package3d_urn="urn:adsk.eagle:package:38215/1" value="MAGJACK" x="113.822" y="-5.715" smashed="yes">
-<attribute name="NAME" x="119.537" y="7.62" size="0.6096" layer="25" font="vector" ratio="20"/>
 <attribute name="PROD_ID" value="CONN-09556" x="94.772" y="3.175" size="1.778" layer="27" display="off"/>
 <attribute name="SF_ID" value="PRT-08534" x="94.772" y="3.175" size="1.778" layer="27" display="off"/>
-<attribute name="VALUE" x="119.537" y="6.35" size="0.6096" layer="27" font="vector" ratio="20"/>
 </element>
 <element name="C11" library="microbuilder" package="0603" value="0.1uF" x="117.124" y="25.146" smashed="yes">
 <attribute name="NAME" x="118.902" y="25.019" size="0.8128" layer="25" font="vector" ratio="18"/>
@@ -1440,8 +1477,7 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="115.473" y="23.241" size="0.4064" layer="27" font="vector" ratio="10" rot="R180"/>
 </element>
 <element name="U5" library="shlomo" package="SOT23-5L" value="TPD2E001" x="118.775" y="18.415" smashed="yes" rot="R270">
-<attribute name="NAME" x="120.68" y="20.32" size="1.27" layer="25" rot="R270"/>
-<attribute name="VALUE" x="115.346" y="20.32" size="1.27" layer="27" rot="R270"/>
+<attribute name="NAME" x="117.729" y="15.524" size="1.27" layer="25" ratio="15"/>
 </element>
 <element name="C13" library="microbuilder" package="0603" value="0.1uF" x="114.965" y="18.415" smashed="yes" rot="R90">
 <attribute name="NAME" x="115.092" y="20.193" size="0.8128" layer="25" font="vector" ratio="18" rot="R90"/>
@@ -1456,18 +1492,15 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="109.631" y="5.715" size="1.27" layer="27" rot="R270"/>
 </element>
 <element name="Q6" library="SparkFun-DiscreteSemi" package="SO08" value="MOSFET_NCH_DUAL-SO08" x="99.309" y="23.876" smashed="yes" rot="R270">
-<attribute name="NAME" x="99.309" y="27.051" size="0.6096" layer="25" font="vector" ratio="20" align="bottom-center"/>
-<attribute name="VALUE" x="99.309" y="20.066" size="0.6096" layer="27" font="vector" ratio="20" align="bottom-center"/>
+<attribute name="NAME" x="99.309" y="27.051" size="1.27" layer="25" font="vector" ratio="15" align="bottom-center"/>
 </element>
 <element name="F6" library="adafruit" library_urn="urn:adsk.eagle:library:420" package="R1206" package3d_urn="urn:adsk.eagle:package:6240569@1/1" value="" x="99.309" y="18.288" smashed="yes" rot="R180">
-<attribute name="NAME" x="100.706" y="17.145" size="1.27" layer="25" rot="R180"/>
+<attribute name="NAME" x="100.071" y="16.891" size="1.27" layer="25" ratio="15" rot="R180"/>
 <attribute name="VALUE" x="100.706" y="20.701" size="1.27" layer="27" rot="R180"/>
 </element>
 <element name="J8" library="SparkFun-Connectors" library_urn="urn:adsk.eagle:library:513" package="MAGJACK" package3d_urn="urn:adsk.eagle:package:38215/1" value="MAGJACK" x="88.133" y="-5.842" smashed="yes">
-<attribute name="NAME" x="93.848" y="7.493" size="0.6096" layer="25" font="vector" ratio="20"/>
 <attribute name="PROD_ID" value="CONN-09556" x="69.083" y="3.048" size="1.778" layer="27" display="off"/>
 <attribute name="SF_ID" value="PRT-08534" x="69.083" y="3.048" size="1.778" layer="27" display="off"/>
-<attribute name="VALUE" x="93.848" y="6.223" size="0.6096" layer="27" font="vector" ratio="20"/>
 </element>
 <element name="C17" library="microbuilder" package="0603" value="0.1uF" x="91.435" y="25.019" smashed="yes">
 <attribute name="NAME" x="93.213" y="24.892" size="0.8128" layer="25" font="vector" ratio="18"/>
@@ -1478,8 +1511,7 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="89.784" y="23.114" size="0.4064" layer="27" font="vector" ratio="10" rot="R180"/>
 </element>
 <element name="U7" library="shlomo" package="SOT23-5L" value="TPD2E001" x="93.086" y="18.288" smashed="yes" rot="R270">
-<attribute name="NAME" x="94.991" y="20.193" size="1.27" layer="25" rot="R270"/>
-<attribute name="VALUE" x="89.657" y="20.193" size="1.27" layer="27" rot="R270"/>
+<attribute name="NAME" x="92.202" y="15.489" size="1.27" layer="25" ratio="15"/>
 </element>
 <element name="C20" library="microbuilder" package="0603" value="0.1uF" x="89.276" y="18.288" smashed="yes" rot="R90">
 <attribute name="NAME" x="89.403" y="20.066" size="0.8128" layer="25" font="vector" ratio="18" rot="R90"/>
@@ -1494,18 +1526,15 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="83.942" y="5.588" size="1.27" layer="27" rot="R270"/>
 </element>
 <element name="Q3" library="SparkFun-DiscreteSemi" package="SO08" value="MOSFET_NCH_DUAL-SO08" x="46.569" y="23.749" smashed="yes" rot="R270">
-<attribute name="NAME" x="46.569" y="26.924" size="0.6096" layer="25" font="vector" ratio="20" align="bottom-center"/>
-<attribute name="VALUE" x="46.569" y="19.939" size="0.6096" layer="27" font="vector" ratio="20" align="bottom-center"/>
+<attribute name="NAME" x="46.569" y="26.924" size="1.27" layer="25" font="vector" ratio="15" align="bottom-center"/>
 </element>
 <element name="F3" library="adafruit" library_urn="urn:adsk.eagle:library:420" package="R1206" package3d_urn="urn:adsk.eagle:package:6240569@1/1" value="" x="46.569" y="18.161" smashed="yes" rot="R180">
-<attribute name="NAME" x="47.966" y="17.018" size="1.27" layer="25" rot="R180"/>
+<attribute name="NAME" x="47.458" y="16.891" size="1.27" layer="25" ratio="15" rot="R180"/>
 <attribute name="VALUE" x="47.966" y="20.574" size="1.27" layer="27" rot="R180"/>
 </element>
 <element name="J4" library="SparkFun-Connectors" library_urn="urn:adsk.eagle:library:513" package="MAGJACK" package3d_urn="urn:adsk.eagle:package:38215/1" value="MAGJACK" x="35.393" y="-5.969" smashed="yes">
-<attribute name="NAME" x="41.108" y="7.366" size="0.6096" layer="25" font="vector" ratio="20"/>
 <attribute name="PROD_ID" value="CONN-09556" x="16.343" y="2.921" size="1.778" layer="27" display="off"/>
 <attribute name="SF_ID" value="PRT-08534" x="16.343" y="2.921" size="1.778" layer="27" display="off"/>
-<attribute name="VALUE" x="41.108" y="6.096" size="0.6096" layer="27" font="vector" ratio="20"/>
 </element>
 <element name="C7" library="microbuilder" package="0603" value="0.1uF" x="38.695" y="24.892" smashed="yes">
 <attribute name="NAME" x="40.473" y="24.765" size="0.8128" layer="25" font="vector" ratio="18"/>
@@ -1516,8 +1545,7 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="37.044" y="22.987" size="0.4064" layer="27" font="vector" ratio="10" rot="R180"/>
 </element>
 <element name="U3" library="shlomo" package="SOT23-5L" value="TPD2E001" x="40.346" y="18.161" smashed="yes" rot="R270">
-<attribute name="NAME" x="42.251" y="20.066" size="1.27" layer="25" rot="R270"/>
-<attribute name="VALUE" x="36.917" y="20.066" size="1.27" layer="27" rot="R270"/>
+<attribute name="NAME" x="39.37" y="15.327" size="1.27" layer="25" ratio="15"/>
 </element>
 <element name="C9" library="microbuilder" package="0603" value="0.1uF" x="36.536" y="18.161" smashed="yes" rot="R90">
 <attribute name="NAME" x="36.663" y="19.939" size="0.8128" layer="25" font="vector" ratio="18" rot="R90"/>
@@ -1531,43 +1559,29 @@ design rules under a new name.</description>
 <attribute name="NAME" x="34.123" y="5.461" size="1.27" layer="25" rot="R270"/>
 <attribute name="VALUE" x="31.202" y="5.461" size="1.27" layer="27" rot="R270"/>
 </element>
-<element name="PP1" library="con-phoenix-381_l" package="MC2" value="MC2" x="122" y="94.873" smashed="yes" rot="R180">
-<attribute name="NAME" x="125.175" y="92.333" size="1.27" layer="21" rot="R180"/>
-<attribute name="VALUE" x="125.175" y="99.318" size="1.27" layer="21" rot="R180"/>
-</element>
+<element name="PP1" library="con-phoenix-381_l" package="MC2" value="MC2" x="122" y="94.873" smashed="yes" rot="R180"/>
 <element name="Q1" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="DPAK" package3d_urn="urn:adsk.eagle:package:5829549/1" value="NCV8403BDTRKG" x="120" y="80" smashed="yes">
-<attribute name="NAME" x="116.317" y="76.298" size="0.4064" layer="25" rot="R90"/>
+<attribute name="NAME" x="116.317" y="76.298" size="1.27" layer="25" ratio="15" rot="R90"/>
 <attribute name="PROD_ID" value="TRANS-09984" x="100" y="105" size="5.588" layer="27" ratio="10" display="off"/>
-<attribute name="VALUE" x="123.937" y="76.298" size="0.4064" layer="27" rot="R90"/>
 </element>
 <element name="Q5" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="DPAK" package3d_urn="urn:adsk.eagle:package:5829549/1" value="NCV8403BDTRKG" x="108" y="80" smashed="yes">
-<attribute name="NAME" x="104.317" y="76.298" size="0.4064" layer="25" rot="R90"/>
+<attribute name="NAME" x="104.317" y="76.298" size="1.27" layer="25" ratio="15" rot="R90"/>
 <attribute name="PROD_ID" value="TRANS-09984" x="108" y="80" size="5.588" layer="27" ratio="10" display="off"/>
-<attribute name="VALUE" x="111.937" y="76.298" size="0.4064" layer="27" rot="R90"/>
 </element>
 <element name="Q7" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="DPAK" package3d_urn="urn:adsk.eagle:package:5829549/1" value="NCV8403BDTRKG" x="99" y="80" smashed="yes">
-<attribute name="NAME" x="95.317" y="76.298" size="0.4064" layer="25" rot="R90"/>
+<attribute name="NAME" x="95.317" y="76.298" size="1.27" layer="25" ratio="15" rot="R90"/>
 <attribute name="PROD_ID" value="TRANS-09984" x="99" y="80" size="5.588" layer="27" ratio="10" display="off"/>
-<attribute name="VALUE" x="102.937" y="76.298" size="0.4064" layer="27" rot="R90"/>
 </element>
 <element name="Q8" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="DPAK" package3d_urn="urn:adsk.eagle:package:5829549/1" value="NCV8403BDTRKG" x="90" y="80" smashed="yes">
-<attribute name="NAME" x="86.317" y="76.298" size="0.4064" layer="25" rot="R90"/>
+<attribute name="NAME" x="86.317" y="76.298" size="1.27" layer="25" ratio="15" rot="R90"/>
 <attribute name="PROD_ID" value="TRANS-09984" x="90" y="80" size="5.588" layer="27" ratio="10" display="off"/>
-<attribute name="VALUE" x="93.937" y="76.298" size="0.4064" layer="27" rot="R90"/>
 </element>
 <element name="Q9" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="DPAK" package3d_urn="urn:adsk.eagle:package:5829549/1" value="NCV8403BDTRKG" x="81" y="80" smashed="yes">
-<attribute name="NAME" x="77.317" y="76.298" size="0.4064" layer="25" rot="R90"/>
+<attribute name="NAME" x="77.317" y="76.298" size="1.27" layer="25" ratio="15" rot="R90"/>
 <attribute name="PROD_ID" value="TRANS-09984" x="81" y="80" size="5.588" layer="27" ratio="10" display="off"/>
-<attribute name="VALUE" x="84.937" y="76.298" size="0.4064" layer="27" rot="R90"/>
 </element>
-<element name="PP2" library="DS91M040TSQ" package="MC5" value="MC5" x="100" y="94.873" smashed="yes" rot="R180">
-<attribute name="NAME" x="106.985" y="92.333" size="1.27" layer="21" rot="R180"/>
-<attribute name="VALUE" x="106.985" y="99.318" size="1.27" layer="21" rot="R180"/>
-</element>
-<element name="PL2" library="con-phoenix-381_l" package="MC3" value="MC3" x="67" y="94.873" smashed="yes" rot="R180">
-<attribute name="NAME" x="72.08" y="92.333" size="1.27" layer="21" rot="R180"/>
-<attribute name="VALUE" x="72.08" y="99.318" size="1.27" layer="21" rot="R180"/>
-</element>
+<element name="PP2" library="DS91M040TSQ" package="MC5" value="MC5" x="100" y="94.873" smashed="yes" rot="R180"/>
+<element name="PL2" library="con-phoenix-381_l" package="MC3" value="MC3" x="67" y="94.873" smashed="yes" rot="R180"/>
 <element name="C1" library="microbuilder" package="1206" value="100uF" x="72.541" y="88.276" smashed="yes" rot="R180">
 <attribute name="NAME" x="70.001" y="88.403" size="0.8128" layer="25" ratio="18" rot="R180"/>
 <attribute name="VALUE" x="70.001" y="88.911" size="0.4064" layer="27" ratio="10" rot="R180"/>
@@ -1575,23 +1589,16 @@ design rules under a new name.</description>
 <element name="X1" library="con-phoenix-508" library_urn="urn:adsk.eagle:library:176" package="MSTBA2" package3d_urn="urn:adsk.eagle:package:9615/1" value="MSTBA2" x="146" y="31.27" smashed="yes" rot="R90">
 <attribute name="MF" value="FARNELL" x="146" y="31.27" size="1.778" layer="27" rot="R90" display="off"/>
 <attribute name="MPN" value="1757242" x="146" y="31.27" size="1.778" layer="27" rot="R90" display="off"/>
-<attribute name="NAME" x="138.38" y="25.174" size="1.778" layer="25" ratio="10" rot="R90"/>
 <attribute name="OC_FARNELL" value="3705171" x="146" y="31.27" size="1.778" layer="27" rot="R90" display="off"/>
 <attribute name="OC_NEWARK" value="71C4161" x="146" y="31.27" size="1.778" layer="27" rot="R90" display="off"/>
-<attribute name="VALUE" x="146" y="26.19" size="1.778" layer="27" ratio="10" rot="R90"/>
 </element>
 <element name="X2" library="con-phoenix-508" library_urn="urn:adsk.eagle:library:176" package="MSTBA2" package3d_urn="urn:adsk.eagle:package:9615/1" value="MSTBA2" x="146" y="15.27" smashed="yes" rot="R90">
 <attribute name="MF" value="FARNELL" x="146" y="15.27" size="1.778" layer="27" rot="R90" display="off"/>
 <attribute name="MPN" value="1757242" x="146" y="15.27" size="1.778" layer="27" rot="R90" display="off"/>
-<attribute name="NAME" x="138.38" y="9.174" size="1.778" layer="25" ratio="10" rot="R90"/>
 <attribute name="OC_FARNELL" value="3705171" x="146" y="15.27" size="1.778" layer="27" rot="R90" display="off"/>
 <attribute name="OC_NEWARK" value="71C4161" x="146" y="15.27" size="1.778" layer="27" rot="R90" display="off"/>
-<attribute name="VALUE" x="146" y="10.19" size="1.778" layer="27" ratio="10" rot="R90"/>
 </element>
-<element name="OUT2" library="con-phoenix-381_l" package="MC4" value="MC4" x="31.81" y="94.873" smashed="yes" rot="R180">
-<attribute name="NAME" x="38.795" y="92.333" size="1.27" layer="21" rot="R180"/>
-<attribute name="VALUE" x="38.795" y="99.318" size="1.27" layer="21" rot="R180"/>
-</element>
+<element name="OUT2" library="con-phoenix-381_l" package="MC4" value="MC4" x="31.81" y="94.873" smashed="yes" rot="R180"/>
 <element name="J1" library="SparkFun-Connectors" library_urn="urn:adsk.eagle:library:513" package="1X03" package3d_urn="urn:adsk.eagle:package:38063/1" value="" x="112" y="91" smashed="yes" rot="R90">
 <attribute name="NAME" x="110.603" y="89.73" size="0.6096" layer="25" font="vector" ratio="20" rot="R90"/>
 <attribute name="VALUE" x="114.032" y="89.73" size="0.6096" layer="27" font="vector" ratio="20" rot="R90"/>
@@ -1608,49 +1615,29 @@ design rules under a new name.</description>
 <element name="X3" library="con-phoenix-508" library_urn="urn:adsk.eagle:library:176" package="MSTBA2" package3d_urn="urn:adsk.eagle:package:9615/1" value="MSTBA2" x="146" y="84.19" smashed="yes" rot="R90">
 <attribute name="MF" value="FARNELL" x="130" y="70.19" size="1.778" layer="27" rot="R90" display="off"/>
 <attribute name="MPN" value="1757242" x="130" y="70.19" size="1.778" layer="27" rot="R90" display="off"/>
-<attribute name="NAME" x="138.38" y="78.094" size="1.778" layer="25" ratio="10" rot="R90"/>
 <attribute name="OC_FARNELL" value="3705171" x="130" y="70.19" size="1.778" layer="27" rot="R90" display="off"/>
 <attribute name="OC_NEWARK" value="71C4161" x="130" y="70.19" size="1.778" layer="27" rot="R90" display="off"/>
-<attribute name="VALUE" x="146" y="79.11" size="1.778" layer="27" ratio="10" rot="R90"/>
 </element>
 <element name="X4" library="con-phoenix-508" library_urn="urn:adsk.eagle:library:176" package="MSTBA2" package3d_urn="urn:adsk.eagle:package:9615/1" value="MSTBA2" x="15.08" y="98" smashed="yes" rot="R180">
 <attribute name="MF" value="FARNELL" x="42.08" y="66" size="1.778" layer="27" rot="R180" display="off"/>
 <attribute name="MPN" value="1757242" x="42.08" y="66" size="1.778" layer="27" rot="R180" display="off"/>
-<attribute name="NAME" x="21.176" y="90.38" size="1.778" layer="25" ratio="10" rot="R180"/>
 <attribute name="OC_FARNELL" value="3705171" x="42.08" y="66" size="1.778" layer="27" rot="R180" display="off"/>
 <attribute name="OC_NEWARK" value="71C4161" x="42.08" y="66" size="1.778" layer="27" rot="R180" display="off"/>
-<attribute name="VALUE" x="20.16" y="98" size="1.778" layer="27" ratio="10" rot="R180"/>
 </element>
-<element name="LED1" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="0603-GREEN" package3d_urn="urn:adsk.eagle:package:5829989/8" value="LED-GREEN0603" x="97.547" y="50.728" smashed="yes" rot="R180">
-<attribute name="NAME" x="98.2455" y="51.617" size="0.4064" layer="25" rot="R270"/>
-<attribute name="VALUE" x="96.4675" y="51.744" size="0.4064" layer="27" rot="R270"/>
-</element>
-<element name="LED2" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="0603-GREEN" package3d_urn="urn:adsk.eagle:package:5829989/8" value="LED-GREEN0603" x="102.675" y="50.728" smashed="yes" rot="R180">
-<attribute name="NAME" x="103.3735" y="51.617" size="0.4064" layer="25" rot="R270"/>
-<attribute name="VALUE" x="101.5955" y="51.744" size="0.4064" layer="27" rot="R270"/>
-</element>
-<element name="LED3" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="0603-GREEN" package3d_urn="urn:adsk.eagle:package:5829989/8" value="LED-GREEN0603" x="87.356" y="50.728" smashed="yes" rot="R180">
-<attribute name="NAME" x="88.0545" y="51.617" size="0.4064" layer="25" rot="R270"/>
-<attribute name="VALUE" x="86.2765" y="51.744" size="0.4064" layer="27" rot="R270"/>
-</element>
+<element name="LED1" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="0603-GREEN" package3d_urn="urn:adsk.eagle:package:5829989/8" value="LED-GREEN0603" x="97.547" y="50.728" smashed="yes" rot="R180"/>
+<element name="LED2" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="0603-GREEN" package3d_urn="urn:adsk.eagle:package:5829989/8" value="LED-GREEN0603" x="102.675" y="50.728" smashed="yes" rot="R180"/>
+<element name="LED3" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="0603-GREEN" package3d_urn="urn:adsk.eagle:package:5829989/8" value="LED-GREEN0603" x="87.356" y="50.728" smashed="yes" rot="R180"/>
 <element name="R9" library="adafruit" library_urn="urn:adsk.eagle:library:420" package="R0603" package3d_urn="urn:adsk.eagle:package:6240565/1" value="" x="97.542" y="56.154" smashed="yes" rot="R90">
-<attribute name="NAME" x="96.653" y="55.265" size="1.27" layer="25" rot="R90"/>
 <attribute name="VALUE" x="99.574" y="55.265" size="1.27" layer="27" rot="R90"/>
 </element>
 <element name="R10" library="adafruit" library_urn="urn:adsk.eagle:library:420" package="R0603" package3d_urn="urn:adsk.eagle:package:6240565/1" value="" x="102.591" y="56.059" smashed="yes" rot="R90">
-<attribute name="NAME" x="101.702" y="55.17" size="1.27" layer="25" rot="R90"/>
 <attribute name="VALUE" x="104.623" y="55.17" size="1.27" layer="27" rot="R90"/>
 </element>
 <element name="R7" library="adafruit" library_urn="urn:adsk.eagle:library:420" package="R0603" package3d_urn="urn:adsk.eagle:package:6240565/1" value="" x="87.382" y="56.123" smashed="yes" rot="R90">
-<attribute name="NAME" x="86.493" y="55.234" size="1.27" layer="25" rot="R90"/>
 <attribute name="VALUE" x="89.414" y="55.234" size="1.27" layer="27" rot="R90"/>
 </element>
-<element name="LED4" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="0603-GREEN" package3d_urn="urn:adsk.eagle:package:5829989/8" value="LED-GREEN0603" x="92.467" y="50.632" smashed="yes" rot="R180">
-<attribute name="NAME" x="93.1655" y="51.521" size="0.4064" layer="25" rot="R270"/>
-<attribute name="VALUE" x="91.3875" y="51.648" size="0.4064" layer="27" rot="R270"/>
-</element>
+<element name="LED4" library="BeagleBone_Blue_R3" library_urn="urn:adsk.eagle:library:5828899" package="0603-GREEN" package3d_urn="urn:adsk.eagle:package:5829989/8" value="LED-GREEN0603" x="92.467" y="50.632" smashed="yes" rot="R180"/>
 <element name="R8" library="adafruit" library_urn="urn:adsk.eagle:library:420" package="R0603" package3d_urn="urn:adsk.eagle:package:6240565/1" value="" x="92.462" y="56.075" smashed="yes" rot="R90">
-<attribute name="NAME" x="91.573" y="55.186" size="1.27" layer="25" rot="R90"/>
 <attribute name="VALUE" x="94.494" y="55.186" size="1.27" layer="27" rot="R90"/>
 </element>
 <element name="J10" library="SparkFun-Connectors" library_urn="urn:adsk.eagle:library:513" package="1X03" package3d_urn="urn:adsk.eagle:package:38063/1" value="" x="4" y="77" smashed="yes" rot="R90">
