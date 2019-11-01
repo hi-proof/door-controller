@@ -9598,13 +9598,6 @@ one or the other!</text>
 </net>
 <net name="12V" class="0">
 <segment>
-<pinref part="PP1" gate=".1" pin="SK"/>
-<wire x1="256.54" y1="320.04" x2="259.08" y2="320.04" width="0.1524" layer="91"/>
-<pinref part="J7" gate="J$1" pin="2"/>
-<wire x1="256.54" y1="320.04" x2="256.54" y2="337.82" width="0.1524" layer="91"/>
-<wire x1="256.54" y1="337.82" x2="248.92" y2="337.82" width="0.1524" layer="91"/>
-</segment>
-<segment>
 <pinref part="OUT1" gate=".1" pin="SK"/>
 <wire x1="58.42" y1="271.78" x2="71.12" y2="271.78" width="0.1524" layer="91"/>
 <label x="71.12" y="271.78" size="1.778" layer="95" xref="yes"/>
@@ -10729,6 +10722,14 @@ one or the other!</text>
 <pinref part="R14" gate="G$1" pin="2"/>
 <wire x1="152.4" y1="38.1" x2="160.02" y2="38.1" width="0.1524" layer="91"/>
 <wire x1="160.02" y1="38.1" x2="160.02" y2="35.56" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$34" class="0">
+<segment>
+<pinref part="J7" gate="J$1" pin="2"/>
+<pinref part="PP1" gate=".1" pin="SK"/>
+<wire x1="248.92" y1="337.82" x2="248.92" y2="320.04" width="0.1524" layer="91"/>
+<wire x1="248.92" y1="320.04" x2="259.08" y2="320.04" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
