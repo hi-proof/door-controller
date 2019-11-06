@@ -1,5 +1,6 @@
 #include "TeensyStep.h"
 #include "Shell.h"
+#include "Bounce2.h"
 
 //l2 green dir 8
 //l4 red pulse 20
@@ -14,11 +15,14 @@ StepControl controller;
 RotateControl rc;
 Stepper s1(PIN_PULSE, PIN_DIR);
 
-int32_t motor_speed = 100;
-int32_t motor_accel = 100;
+int32_t motor_speed = 4000;
+int32_t motor_accel = 1000;
 
 int32_t open_position = 0;
 int32_t closed_position;
+
+Bounce button_start = Bounce();
+Bounce button_stop = Bounce();
 
 void do_homing_cycle()
 {
@@ -55,6 +59,9 @@ void setup() {
   pinMode(PIN_SW1, INPUT_PULLUP);
   pinMode(PIN_SW2, INPUT_PULLUP);
 
+  button_start.attach(PIN_SW1, INPUT_PULLUP);
+  button_stop.attach(PIN_SW2, INPUT_PULLUP);
+
   Serial.begin(9600);
   shell_init(shell_reader, shell_writer, PSTR("Hi-Proof elevatormatic"));
   shell_register(command_motor, PSTR("motor"));
@@ -66,8 +73,8 @@ void setup() {
   //  controller.move(s1);
 
 //  do_homing_cycle();
-//  s1.setMaxSpeed(350);
-//  s1.setAcceleration(200);
+  s1.setMaxSpeed(motor_speed);
+  s1.setAcceleration(motor_accel);
 }
 
 
@@ -82,6 +89,17 @@ void loop() {
 //  s1.setTargetAbs(closed_position);
 //  controller.move(s1);
 //  delay(1000);
+
+  button_start.update();
+  button_stop.update();
+
+  if (button_start.rose()) {
+    rc.rotateAsync(s1);
+  }
+
+  if (button_stop.rose()) {
+    rc.emergencyStop();
+  }
 
   shell_task();
 }
