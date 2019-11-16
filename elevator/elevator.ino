@@ -1,48 +1,45 @@
 #include "TeensyStep.h"
 #include "Shell.h"
 #include "Bounce2.h"
+#include "parallelio.h"
 
 //Stepper s1(34, 33);
-StepControl controller(100);
-RotateControl rc(100);
+StepControl controller(25);
+RotateControl rc(25);
 
 int32_t closed_position;
 
-const uint32_t HOMING_SPEED = 500;
+const uint32_t HOMING_SPEED = 1000;
+const uint32_t HOMING_ACCEL = 1000;
 const uint32_t DOOR_SPEED = 6000;
 const uint32_t DOOR_ACCEL = 1800;
+
 
 class Door
 {
   public:
-  
-  uint8_t pin_dir, pin_pulse, pin_sw1, pin_sw2;
 
-  int motor_speed;
-  int motor_accel;
+    uint8_t pin_dir, pin_pulse, pin_sw1, pin_sw2;
 
-  int32_t pos_open;
-  int32_t pos_closed;
+    int motor_speed;
+    int motor_accel;
 
-  Stepper s;
-  
-  
-    Door(uint8_t pin_pulse, uint8_t pin_dir, uint8_t pin_sw1, uint8_t pin_sw2) 
+    int32_t pos_open;
+    int32_t pos_closed;
+
+    Stepper s;
+
+
+    Door(uint8_t pin_pulse, uint8_t pin_dir, uint8_t pin_sw1, uint8_t pin_sw2)
       : s(pin_pulse, pin_dir)
     {
       this->pin_dir = pin_dir;
       this->pin_pulse = pin_pulse;
-      this->pin_sw1 = pin_sw1;    
+      this->pin_sw1 = pin_sw1;
       this->pin_sw2 = pin_sw2;
 
-      this->motor_speed = 400;
-      this->motor_accel = 100;
-
-//      pinMode(this->pin_dir, OUTPUT);
-//      digitalWrite(this->pin_dir, HIGH);
-//
-//      pinMode(this->pin_pulse, OUTPUT);
-//      digitalWrite(this->pin_pulse, HIGH);
+      this->motor_speed = 1500;
+      this->motor_accel = 500;
 
       pinMode(this->pin_sw1, INPUT_PULLUP);
       pinMode(this->pin_sw2, INPUT_PULLUP);
@@ -50,7 +47,7 @@ class Door
 
     void homing_cycle() {
       this->s.setAcceleration(1000);
-      
+
       // open first
       if (!digitalRead(this->pin_sw1)) {
         this->s.setMaxSpeed(-HOMING_SPEED);
@@ -63,7 +60,7 @@ class Door
       this->s.setPosition(0);
       this->pos_closed = 18000;
       this->s.setMaxSpeed(HOMING_SPEED);
-      
+
       if (!digitalRead(this->pin_sw2)) {
         this->s.setMaxSpeed(HOMING_SPEED);
         rc.rotateAsync(this->s);
@@ -77,10 +74,68 @@ class Door
       this->s.setMaxSpeed(DOOR_SPEED);
       this->s.setAcceleration(DOOR_ACCEL);
     }
+
+    void homing_cycle_rotate() {
+      this->s.setAcceleration(HOMING_ACCEL);
+
+      // open door until both switches are triggered
+      if (!digitalRead(this->pin_sw1) && !digitalRead(this->pin_sw2)) {
+        this->s.setMaxSpeed(-HOMING_SPEED);
+        rc.rotateAsync(this->s);
+
+        // wait for the second switch to be triggered
+        while (true) {
+          while (!digitalRead(this->pin_sw1));
+          // if both switches are triggered we're at the base position
+          if (digitalRead(this->pin_sw2)) {
+             break;
+          }
+        }
+        rc.stop();
+      }
+
+      // we're back home - reset position
+      this->s.setPosition(0);
+    }
+
+    void goto_position(int32_t pos) {
+      s.setMaxSpeed(motor_speed);
+      s.setAcceleration(motor_accel);
+      s.setTargetAbs(pos);
+      controller.moveAsync(s);
+    }
+
+    void go()
+    {
+       rc.stop();
+       s.setMaxSpeed(HOMING_SPEED);
+       s.setAcceleration(HOMING_ACCEL);
+       rc.rotateAsync(s);
+    }
+
+    void back()
+    {
+       rc.stop();
+       s.setMaxSpeed(-HOMING_SPEED);
+       s.setAcceleration(HOMING_ACCEL);
+       rc.rotateAsync(s);
+    }
+    
+    void halt()
+    {
+       rc.stopAsync();
+    }
+    
+    void estop()
+    {
+       controller.emergencyStop();
+       rc.emergencyStop();
+    }
 };
 
-//int32_t motor_speed = 4000;
-//int32_t motor_accel = 1000;
+
+int32_t motor_speed = 400;
+int32_t motor_accel = 500;
 //
 //int32_t open_position = 0;
 //int32_t closed_position;
@@ -90,6 +145,22 @@ Bounce button_stop = Bounce();
 
 Door d1(34, 33, 35, 36);
 Door d2(38, 37, 32, 39);
+
+
+#define SW_DATA (26)
+#define SW_CLOCK (27)
+#define SW_LATCH (25)
+ParallelInputs buttons(SW_DATA, SW_CLOCK, SW_LATCH);
+
+#define SSEG_DATA (5)
+#define SSEG_CLOCK (6)
+#define SSEG_LATCH (7) 
+SSeg sseg(SSEG_DATA, SSEG_CLOCK, SSEG_LATCH);
+
+#define BL_DATA   (24)
+#define BL_CLOCK  (12)
+#define BL_LATCH  (4)
+ParallelOutputs button_leds(BL_DATA, BL_CLOCK, BL_LATCH);
 
 //void do_homing_cycle()
 //{
@@ -116,68 +187,263 @@ Door d2(38, 37, 32, 39);
 //  closed_position = s1.getPosition();
 //}
 
+
+//const int latchPin = 7;
+//const int clockPin = 6;
+//const int dataPin = 5;
+
 void setup() {
   // put your setup code here, to run once:
   //  pinMode(PIN_DIR, OUTPUT);
   //  pinMode(PIN_PULSE, OUTPUT);
-//  pinMode(36, INPUT_PULLUP);
-//  pinMode(35, INPUT_PULLUP);
+  //  pinMode(36, INPUT_PULLUP);
+  //  pinMode(35, INPUT_PULLUP);
 
-//  button_start.attach(PIN_SW1, INPUT_PULLUP);
-//  button_stop.attach(PIN_SW2, INPUT_PULLUP);
+  pinMode(13, OUTPUT);
+  digitalWrite(13, HIGH);
+
+//button_leds.begin();
+//  pinMode(latchPin, OUTPUT);
+//  pinMode(dataPin, OUTPUT);  
+//  pinMode(clockPin, OUTPUT);
+
+  //  button_start.attach(PIN_SW1, INPUT_PULLUP);
+  //  button_stop.attach(PIN_SW2, INPUT_PULLUP);
 
   Serial.begin(9600);
   shell_init(shell_reader, shell_writer, PSTR("Hi-Proof elevatormatic"));
-  shell_register(command_home, PSTR("home"));
-  shell_register(command_info, PSTR("info"));
-  shell_register(command_open, PSTR("open"));
-  shell_register(command_close, PSTR("close"));
-  shell_register(command_move, PSTR("move"));
-
-//  shell_register(command_motor, PSTR("motor"));
-//  shell_register(command_motor, PSTR("m"));
   
+//  shell_register(command_home, PSTR("home"));
+//  shell_register(command_info, PSTR("info"));
+//  shell_register(command_open, PSTR("open"));
+//  shell_register(command_close, PSTR("close"));
+//  shell_register(command_move, PSTR("move"));
+
+  shell_register(command_go, PSTR("g"));
+  shell_register(command_back, PSTR("b"));
+  shell_register(command_halt, PSTR("h"));
+  shell_register(command_estop, PSTR("e"));
+  shell_register(command_motor, PSTR("m"));
+  //  shell_register(command_motor, PSTR("m"));
+
   //
   //  s1.setTargetRel(-500);
   //  controller.move(s1);
 
   //shell_printf("Starting D1 homing cycle\r\n");
-//    d1.homing_cycle();
-//    d2.homing_cycle();
-//  shell_printf("D1 closed position: %d\r\n", d1.pos_closed);
+  //    d1.homing_cycle();
+  //    d2.homing_cycle();
+  //  shell_printf("D1 closed position: %d\r\n", d1.pos_closed);
 
-//  do_homing_cycle();
-//  s1.setMaxSpeed(DOOR_SPEED);
-//  s1.setAcceleration(DOOR_ACCEL);
+  //  do_homing_cycle();
+  //  s1.setMaxSpeed(DOOR_SPEED);
+  //  s1.setAcceleration(DOOR_ACCEL);
 
   //command_home(0, NULL);
 }
 
 
+FancyButton b1(
+  ParallelBounce(buttons, 0),
+  ParallelOutputPin(button_leds, 3)
+);
+
+FancyButton b2(
+  ParallelBounce(buttons, 1),
+  ParallelOutputPin(button_leds, 2)
+);
+
+FancyButton b3(
+  ParallelBounce(buttons, 2),
+  ParallelOutputPin(button_leds, 1)
+);
+
+FancyButton b4(
+  ParallelBounce(buttons, 3),
+  ParallelOutputPin(button_leds, 0)
+);
+
+FancyButton b5(
+  ParallelBounce(buttons, 7),
+  ParallelOutputPin(button_leds, 4)
+);
+
+FancyButton b6(
+  ParallelBounce(buttons, 6),
+  ParallelOutputPin(button_leds, 5)
+);
+
+FancyButton& button_star = b1;
+FancyButton& button_13f = b2;
+FancyButton& button_14f = b3;
+FancyButton& button_bell = b4;
+FancyButton& button_close = b5;
+FancyButton& button_open = b6;
+
+void on_press() {
+  Serial.printf("Pressed\r\n");
+}
+
+void on_hold() {
+  Serial.printf("Held\r\n");
+}
+
+static bool maintenance_mode = false;
+static int32_t position_star = 0;
+static int32_t position_13f = 0;
+static int32_t position_14f = 0;
+
+void maint_start() 
+{
+  maintenance_mode = true;
+  controller.stop();
+}
+
+void maint_stop() 
+{
+  maintenance_mode = false;
+  rc.stop();
+}
 
 void loop() {
+  buttons.update();
+
+  if (maintenance_mode) {
+    button_bell.on = (millis() / 500) % 2 == 0;
+    button_open.on = true;
+    button_close.on = true;
+
+    sseg.values[0] = SEG_G;
+    sseg.values[1] = SEG_G;
+
+    button_open.update(
+      []() -> void { 
+        sseg.values[0] = SEG_G;
+        sseg.values[1] = SEG_G | SEG_B | SEG_C;
+        d1.go(); 
+      }
+    );
+
+    button_close.update(
+      []() -> void { 
+        sseg.values[0] = SEG_G | SEG_F | SEG_E;
+        sseg.values[1] = SEG_G;
+        d1.back(); 
+      }
+    );
+
+    button_13f.update(
+      NULL, 
+      []() -> void { position_13f = d1.s.getPosition(); }
+    );
+
+    button_14f.update(
+      NULL, 
+      []() -> void { position_14f = d1.s.getPosition(); }
+    );
+
+    button_star.update(
+      NULL, 
+      []() -> void { position_star = d1.s.getPosition(); }
+    );
+
+    button_bell.update(
+      []() -> void {
+        sseg.values[0] = SEG_G;
+        sseg.values[1] = SEG_G;
+        d1.halt();
+      },
+      []() -> void {
+        d1.estop();
+        maintenance_mode = false;
+      }
+    );
+
+    if (button_bell.on) {
+      sseg.values[0] |= SEG_DP;
+    } else {
+      sseg.values[0] &= ~SEG_DP;
+    }
+
+    
+  } else {
+    button_bell.on = false;
+    button_open.on = false;
+    button_close.on = false;    
+
+    sseg.values[0] &= ~SEG_DP;
+
+    button_13f.update(
+      []() -> void { 
+        sseg.values[0] = SSeg::digit(1);
+        sseg.values[1] = SSeg::digit(3);
+        d1.goto_position(position_13f); 
+      }
+    );
+
+    button_14f.update(
+      []() -> void { 
+        sseg.values[0] = SSeg::digit(1);
+        sseg.values[1] = SSeg::digit(4);
+        d1.goto_position(position_14f); 
+      }
+    );
+
+    button_star.update(
+      []() -> void { 
+        sseg.values[0] = SSeg::digit(1);
+        sseg.values[1] = SSeg::digit(2);
+        d1.goto_position(position_star); 
+      }
+    );
+
+    button_bell.update(
+      []() -> void { d1.estop(); },
+      []() -> void { maintenance_mode = true; }
+    );
+
+  }
+
+  b1.update();
+  b2.update();
+  b3.update();
+  b4.update();
+  b5.update();
+  b6.update();
+  
+  button_leds.update();
+  sseg.update();
+
+  //Serial.println(buttons.values, BIN);
   //  Serial.printf("SW1: %d   SW2: %d\r\n", digitalRead(PIN_SW1), digitalRead(PIN_SW2));
-  //  delay(500);
+  ///delay(500);
 
-//  d1.s.setTargetAbs(0);
-//  d2.s.setTargetAbs(0);
-//  controller.move(d1.s, d2.s);
-//  delay(1000);
-//  d1.s.setTargetAbs(d1.pos_closed);
-//  d2.s.setTargetAbs(d2.pos_closed);
-//  controller.move(d1.s, d2.s);
-//  delay(1000);
+//  digitalWrite(latchPin, LOW);
+//  shiftOut(dataPin, clockPin, MSBFIRST, (millis() / 100) & 0xFF);
+//  shiftOut(dataPin, clockPin, MSBFIRST, (millis() / 100) & 0xFF);
+//  shiftOut(dataPin, clockPin, MSBFIRST, (millis() / 100) & 0xFF);
+//  digitalWrite(latchPin, HIGH);
 
-//  button_start.update();
-//  button_stop.update();
-//
-//  if (button_start.rose()) {
-//    rc.rotateAsync(s1);
-//  }
-//
-//  if (button_stop.rose()) {
-//    rc.emergencyStop();
-//  }
+
+  //  d1.s.setTargetAbs(0);
+  //  d2.s.setTargetAbs(0);
+  //  controller.move(d1.s, d2.s);
+  //  delay(1000);
+  //  d1.s.setTargetAbs(d1.pos_closed);
+  //  d2.s.setTargetAbs(d2.pos_closed);
+  //  controller.move(d1.s, d2.s);
+  //  delay(1000);
+
+  //  button_start.update();
+  //  button_stop.update();
+  //
+  //  if (button_start.rose()) {
+  //    rc.rotateAsync(s1);
+  //  }
+  //
+  //  if (button_stop.rose()) {
+  //    rc.emergencyStop();
+  //  }
 
   shell_task();
 }
@@ -194,7 +460,7 @@ int command_home(int argc, char** argv)
   shell_printf("Starting D2 homing cycle\r\n");
   d2.homing_cycle();
   shell_printf("D1 closed position: %d\r\n", d2.pos_closed);
-  
+
   return SHELL_RET_SUCCESS;
 }
 
@@ -229,29 +495,55 @@ int command_move(int argc, char ** argv) {
   }
 }
 
+int command_go(int argc, char ** argv)
+{
+   d1.s.setMaxSpeed(motor_speed);
+   d1.s.setAcceleration(motor_accel);
+   rc.rotateAsync(d1.s);
+   return SHELL_RET_SUCCESS;
+}
 
-//int command_motor(int argc, char** argv)
-//{
-//  if (argc == 1) {
-//    shell_printf("Max speed:  %d\r\n", motor_speed);
-//    shell_printf("Max accel:  %d\r\n", motor_accel);
-//    shell_printf("Position:   %d\r\n", s1.getPosition());
-//  }
-//  if (argc >= 2) {
-//    if (0 == strcmp(argv[1], "speed")) {
-//      if (argc >= 3) {
-//        motor_speed = atoi(argv[2]);
-//        s1.setMaxSpeed(motor_speed);
-//      }
-//      shell_printf("Max speed:  %d\r\n", motor_speed);
-//    }
-//    if (0 == strcmp(argv[1], "accel")) {
-//      if (argc >= 3) {
-//        motor_accel = atoi(argv[2]);
-//        s1.setAcceleration(motor_accel);
-//      }
-//      shell_printf("Max accel:  %d\r\n", motor_accel);      
-//    }
+int command_back(int argc, char ** argv)
+{
+  d1.s.setMaxSpeed(-motor_speed);
+  d1.s.setAcceleration(motor_accel);
+   rc.rotateAsync(d1.s);
+   return SHELL_RET_SUCCESS;
+}
+
+int command_halt(int argc, char ** argv)
+{
+   rc.stopAsync();
+   return SHELL_RET_SUCCESS;
+}
+
+int command_estop(int argc, char ** argv)
+{
+   rc.emergencyStop();
+   return SHELL_RET_SUCCESS;
+}
+
+
+int command_motor(int argc, char** argv)
+{
+  if (argc == 1) {
+    shell_printf("Max speed:  %d\r\n", motor_speed);
+    shell_printf("Max accel:  %d\r\n", motor_accel);
+    shell_printf("Position:   %d\r\n", d1.s.getPosition());
+  }
+  if (argc >= 2) {
+    if (0 == strcmp(argv[1], "speed")) {
+      if (argc >= 3) {
+        motor_speed = atoi(argv[2]);
+      }
+      shell_printf("Max speed:  %d\r\n", motor_speed);
+    }
+    if (0 == strcmp(argv[1], "accel")) {
+      if (argc >= 3) {
+        motor_accel = atoi(argv[2]);        
+      }
+      shell_printf("Max accel:  %d\r\n", motor_accel);
+    }
 //    if (0 == strcmp(argv[1], "start")) {
 //      rc.rotateAsync(s1);
 //    }
@@ -262,9 +554,9 @@ int command_move(int argc, char ** argv) {
 //      rc.emergencyStop();
 //    }
 //
-//  }
-//  return SHELL_RET_SUCCESS;
-//}
+  }
+  return SHELL_RET_SUCCESS;
+}
 
 int shell_reader(char * data)
 {
