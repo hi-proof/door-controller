@@ -111,7 +111,7 @@ void FloorController::update() {
 }
 
 // Maintenence Mode Tasks
-void FloorController::enterMaintainenceMode() { in_maintenence_mode_ = true; }
+void FloorController::enterMaintenanceMode() { in_maintenence_mode_ = true; }
 void FloorController::setStop(uint8_t stop_number) {
   if (in_maintenence_mode_ && stop_number > 0 && stop_number < kNumNamedStops) {
     named_stops_.at(stop_number) = stepper_.getPosition();
@@ -139,4 +139,4 @@ void FloorController::rotateWithStep(uint16_t steps, bool clockwise) {
   if (in_maintenence_mode_) {
   }
 }
-void FloorController::exitMaintainenceMode() { in_maintenence_mode_ = false; }
+void FloorController::exitMaintenanceMode() { in_maintenence_mode_ = false; }

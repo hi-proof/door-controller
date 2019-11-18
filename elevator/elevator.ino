@@ -9,7 +9,7 @@
 StepControl controller(25);
 RotateControl rc(25);
 
-FloorController fc{34, 33, 35, 36};
+hiproof::elevator::FloorController fc{34, 33, 35, 36};
 
 int32_t closed_position;
 
@@ -312,7 +312,7 @@ void maint_stop()
 void loop() {
   buttons.update();
 
-  if (fc.inMaintenenceMode()) {
+  if (fc.inMaintenanceMode()) {
     button_bell.on = (millis() / 500) % 2 == 0;
     button_open.on = true;
     button_close.on = true;
@@ -320,13 +320,11 @@ void loop() {
     sseg.values[0] = SEG_G;
     sseg.values[1] = SEG_G;
 
-    button_open.update(
-      []() -> void { 
-        sseg.values[0] = SEG_G;
-        sseg.values[1] = SEG_G | SEG_B | SEG_C;
-        fc.rotate(true); 
-      }
-    );
+    button_open.update([]() -> void {
+      sseg.values[0] = SEG_G;
+      sseg.values[1] = SEG_G | SEG_B | SEG_C;
+      fc.rotate(true);
+    });
 
     button_close.update([]() -> void {
       sseg.values[0] = SEG_G | SEG_F | SEG_E;
@@ -334,23 +332,22 @@ void loop() {
       fc.rotate(false);
     });
 
-    button_13f.update(NULL, []() -> void { fc.setPosition(1); });
+    button_13f.update(NULL, []() -> void { fc.setStop(1); });
 
-    button_14f.update(NULL, []() -> void { fc.setPosition(2); });
+    button_14f.update(NULL, []() -> void { fc.setStop(2); });
 
-    button_star.update(NULL, []() -> void { fc.setPosition(3); });
+    button_star.update(NULL, []() -> void { fc.setStop(3); });
 
     button_bell.update(
-      []() -> void {
-        sseg.values[0] = SEG_G;
-        sseg.values[1] = SEG_G;
-        fc.stopRotation();
-      },
-      []() -> void {
-        fc.emergencyStop();
-        fc.exitMaintenenceMode();
-      }
-    );
+        []() -> void {
+          sseg.values[0] = SEG_G;
+          sseg.values[1] = SEG_G;
+          fc.stopRotation();
+        },
+        []() -> void {
+          fc.emergencyStop();
+          fc.exitMaintenanceMode();
+        });
 
     if (button_bell.on) {
       sseg.values[0] |= SEG_DP;
@@ -366,21 +363,17 @@ void loop() {
 
     sseg.values[0] &= ~SEG_DP;
 
-    button_13f.update(
-      []() -> void { 
-        sseg.values[0] = SSeg::digit(1);
-        sseg.values[1] = SSeg::digit(3);
-        fc.moveToStop(1); 
-      }
-    );
+    button_13f.update([]() -> void {
+      sseg.values[0] = SSeg::digit(1);
+      sseg.values[1] = SSeg::digit(3);
+      fc.moveToStop(1);
+    });
 
-    button_14f.update(
-      []() -> void { 
-        sseg.values[0] = SSeg::digit(1);
-        sseg.values[1] = SSeg::digit(4);
-        fc.moveToStop(2); 
-      }
-    );
+    button_14f.update([]() -> void {
+      sseg.values[0] = SSeg::digit(1);
+      sseg.values[1] = SSeg::digit(4);
+      fc.moveToStop(2);
+    });
 
     button_star.update(
       []() -> void { 
@@ -391,7 +384,7 @@ void loop() {
     );
 
     button_bell.update([]() -> void { fc.emergencyStop(); },
-                       []() -> void { fc.enterMaintenenceMode(); });
+                       []() -> void { fc.enterMaintenanceMode(); });
   }
 
   b1.update();

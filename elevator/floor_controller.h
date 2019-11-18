@@ -27,17 +27,17 @@ class FloorController final : SafetyCriticalComponent {
   void moveToStop(uint8_t stop_number);
   void update();
 
-  // API for "maintenence mode" tasks
-  void enterMaintainenceMode();
+  // API for "maintenance mode" tasks
+  void enterMaintenanceMode();
   void setStop(uint8_t stop_number);
   void rotate(bool clockwise);
   void stopRotation();
   void rotateWithStep(uint16_t steps, bool clockwise);
-  bool inMaintenenceMode() { return in_maintenence_mode_; }
-  void exitMaintainenceMode();
+  bool inMaintenanceMode() { return in_maintenence_mode_; }
+  void exitMaintenanceMode();
 
-  void enterSafeMode() = 0;
-  void emergencyStop() = 0;
+  void enterSafeMode();
+  void emergencyStop();
 
  private:
   static constexpr uint16_t kHomingSpeed = 1000;

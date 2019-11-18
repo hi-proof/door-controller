@@ -13,7 +13,7 @@ namespace elevator {
 
 class SafetyCriticalComponent {
  public:
-  virtual ~SafetyCriticalComponent();
+  virtual ~SafetyCriticalComponent() {}
   virtual void enterSafeMode() = 0;
   virtual void emergencyStop() = 0;
 
