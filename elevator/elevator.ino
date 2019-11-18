@@ -242,7 +242,6 @@ void setup() {
   //command_home(0, NULL);
 }
 
-
 FancyButton b1(
   ParallelBounce(buttons, 0),
   ParallelOutputPin(button_leds, 3)
@@ -280,6 +279,32 @@ FancyButton& button_bell = b4;
 FancyButton& button_close = b5;
 FancyButton& button_open = b6;
 
+// Logical state: users can turn things on, arriving places can turn things off
+// we will transfer this state back to the master
+// and master will decide what to do based on state changes
+// this is NOT tied to whether the button's LED is on etc
+struct ElevatorPanelState {
+  bool button_star_pressed;
+  bool button_13f_pressed;
+  bool button_14f_pressed;
+  bool button_bell_pressed;
+  bool button_close_pressed;
+  bool button_open_pressed;
+};
+
+struct ElevatorPanelState elevatorPanelState;
+
+struct elevator_to_outside_packet_t {
+  uint8_t type;
+  ElevatorPanelState state;
+};
+
+struct screen_update_packet_t {
+  uint8_t type;
+  uint8_t digit_1;
+  uint8_t digit_2;
+};
+
 void on_press() {
   Serial.printf("Pressed\r\n");
 }
@@ -305,9 +330,7 @@ void maint_stop()
   rc.stop();
 }
 
-void loop() {
-  buttons.update();
-
+void loopInsideElevator() {
   if (maintenance_mode) {
     button_bell.on = (millis() / 500) % 2 == 0;
     button_open.on = true;
@@ -367,6 +390,8 @@ void loop() {
 
     
   } else {
+    // TODO: async update display over serial - e.g. if arrived at floor 14, set to show floor 13
+    // TODO: async update button states - e.g. if arrived at floor 13, turn off floor 13 button
     button_bell.on = false;
     button_open.on = false;
     button_close.on = false;    
@@ -375,6 +400,8 @@ void loop() {
 
     button_13f.update(
       []() -> void { 
+        elevatorPanelState.button_13f_pressed = true;
+        
         sseg.values[0] = SSeg::digit(1);
         sseg.values[1] = SSeg::digit(3);
         d1.goto_position(position_13f); 
@@ -383,6 +410,7 @@ void loop() {
 
     button_14f.update(
       []() -> void { 
+        elevatorPanelState.button_14f_pressed = true;
         sseg.values[0] = SSeg::digit(1);
         sseg.values[1] = SSeg::digit(4);
         d1.goto_position(position_14f); 
@@ -391,6 +419,7 @@ void loop() {
 
     button_star.update(
       []() -> void { 
+        elevatorPanelState.button_star_pressed = true;
         sseg.values[0] = SSeg::digit(1);
         sseg.values[1] = SSeg::digit(2);
         d1.goto_position(position_star); 
@@ -398,19 +427,22 @@ void loop() {
     );
 
     button_bell.update(
-      []() -> void { d1.estop(); },
+      []() -> void { 
+        elevatorPanelState.button_bell_pressed = true;
+        
+        d1.estop(); },
       []() -> void { maintenance_mode = true; }
     );
 
+    button_open.update(
+      []() -> void { elevatorPanelState.button_open_pressed = true; }
+    );
+
+    button_close.update(
+      []() -> void { elevatorPanelState.button_close_pressed = true; }
+    );
   }
 
-  b1.update();
-  b2.update();
-  b3.update();
-  b4.update();
-  b5.update();
-  b6.update();
-  
   button_leds.update();
   sseg.update();
 
@@ -444,6 +476,29 @@ void loop() {
   //  if (button_stop.rose()) {
   //    rc.emergencyStop();
   //  }
+
+}
+
+void loopOutsideElevator() {
+  // TODO
+}
+
+void loop() {
+  buttons.update();
+  // TODO: DIP switch or w/e
+  if (true) {
+    loopInsideElevator();
+  } else {
+    loopOutsideElevator();  
+  }
+/*
+  // TODO (roee): seems we don't need these
+  b1.update();
+  b2.update();
+  b3.update();
+  b4.update();
+  b5.update();
+  b6.update();*/
 
   shell_task();
 }
@@ -572,4 +627,30 @@ void shell_writer(char data)
 {
   // Wrapper for Serial.write() method
   Serial.write(data);
+}
+
+//////////////////// network code /////////////////////
+
+enum packet_type {
+  ELEVATOR_TO_OUTSIDE = 0,
+  SCREEN_UPDATE,
+  PACKET_TYPES
+};
+
+void update_screen(const struct screen_update_packet_t * screen_update) {
+  sseg.values[0] = SSeg::digit(screen_update->digit_1);
+  sseg.values[1] = SSeg::digit(screen_update->digit_2);
+}
+
+void onPacketReceived(const uint8_t* buffer, size_t size)
+{
+    switch((packet_type)buffer[0]) {
+      case ELEVATOR_TO_OUTSIDE:
+        // TODO: compare current state to previous state, see if we need to get motor running etc.
+        //
+        // resolve_state((elevator_to_outside_packet_t *)buffer);
+        break;
+      case SCREEN_UPDATE:
+        update_screen((const screen_update_packet_t *)buffer);
+    }
 }
