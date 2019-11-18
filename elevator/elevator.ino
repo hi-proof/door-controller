@@ -3,9 +3,13 @@
 #include "Bounce2.h"
 #include "parallelio.h"
 
+#include "floor_controller.h"
+
 //Stepper s1(34, 33);
 StepControl controller(25);
 RotateControl rc(25);
+
+FloorController fc{34, 33, 35, 36};
 
 int32_t closed_position;
 
@@ -308,7 +312,7 @@ void maint_stop()
 void loop() {
   buttons.update();
 
-  if (maintenance_mode) {
+  if (fc.inMaintenenceMode()) {
     button_bell.on = (millis() / 500) % 2 == 0;
     button_open.on = true;
     button_close.on = true;
@@ -320,42 +324,31 @@ void loop() {
       []() -> void { 
         sseg.values[0] = SEG_G;
         sseg.values[1] = SEG_G | SEG_B | SEG_C;
-        d1.go(); 
+        fc.rotate(true); 
       }
     );
 
-    button_close.update(
-      []() -> void { 
-        sseg.values[0] = SEG_G | SEG_F | SEG_E;
-        sseg.values[1] = SEG_G;
-        d1.back(); 
-      }
-    );
+    button_close.update([]() -> void {
+      sseg.values[0] = SEG_G | SEG_F | SEG_E;
+      sseg.values[1] = SEG_G;
+      fc.rotate(false);
+    });
 
-    button_13f.update(
-      NULL, 
-      []() -> void { position_13f = d1.s.getPosition(); }
-    );
+    button_13f.update(NULL, []() -> void { fc.setPosition(1); });
 
-    button_14f.update(
-      NULL, 
-      []() -> void { position_14f = d1.s.getPosition(); }
-    );
+    button_14f.update(NULL, []() -> void { fc.setPosition(2); });
 
-    button_star.update(
-      NULL, 
-      []() -> void { position_star = d1.s.getPosition(); }
-    );
+    button_star.update(NULL, []() -> void { fc.setPosition(3); });
 
     button_bell.update(
       []() -> void {
         sseg.values[0] = SEG_G;
         sseg.values[1] = SEG_G;
-        d1.halt();
+        fc.stopRotation();
       },
       []() -> void {
-        d1.estop();
-        maintenance_mode = false;
+        fc.emergencyStop();
+        fc.exitMaintenenceMode();
       }
     );
 
@@ -377,7 +370,7 @@ void loop() {
       []() -> void { 
         sseg.values[0] = SSeg::digit(1);
         sseg.values[1] = SSeg::digit(3);
-        d1.goto_position(position_13f); 
+        fc.moveToStop(1); 
       }
     );
 
@@ -385,7 +378,7 @@ void loop() {
       []() -> void { 
         sseg.values[0] = SSeg::digit(1);
         sseg.values[1] = SSeg::digit(4);
-        d1.goto_position(position_14f); 
+        fc.moveToStop(2); 
       }
     );
 
@@ -393,15 +386,12 @@ void loop() {
       []() -> void { 
         sseg.values[0] = SSeg::digit(1);
         sseg.values[1] = SSeg::digit(2);
-        d1.goto_position(position_star); 
+        fc.moveToStop(3); 
       }
     );
 
-    button_bell.update(
-      []() -> void { d1.estop(); },
-      []() -> void { maintenance_mode = true; }
-    );
-
+    button_bell.update([]() -> void { fc.emergencyStop(); },
+                       []() -> void { fc.enterMaintenenceMode(); });
   }
 
   b1.update();

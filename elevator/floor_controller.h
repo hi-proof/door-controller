@@ -11,6 +11,7 @@
 
 #include "safety_critical_component.h"
 #include "TeensyStep.h"
+#include "Bounce2.h"
 
 namespace hiproof {
 
@@ -22,16 +23,18 @@ class FloorController final : SafetyCriticalComponent {
 
   FloorController(const int step_pin, const int dir_pin, const int home_pin, const int overrun_pin);
   ~FloorController();
-  bool seekToHome();
-  bool moveToStop(uint8_t stop_number);
+  void seekToHome();
+  void moveToStop(uint8_t stop_number);
+  void update();
 
   // API for "maintenence mode" tasks
-  bool enterMaintainenceMode();
-  bool setStop(uint8_t stop_number);
-  bool rotate(bool clockwise);
-  bool stopRotation();
-  bool rotateWithStep(uint16_t steps, bool clockwise);
-  bool exitMaintainenceMode();
+  void enterMaintainenceMode();
+  void setStop(uint8_t stop_number);
+  void rotate(bool clockwise);
+  void stopRotation();
+  void rotateWithStep(uint16_t steps, bool clockwise);
+  bool inMaintenenceMode() { return in_maintenence_mode_; }
+  void exitMaintainenceMode();
 
   void enterSafeMode() = 0;
   void emergencyStop() = 0;
@@ -41,13 +44,15 @@ class FloorController final : SafetyCriticalComponent {
   static constexpr uint16_t kHomingAccel = 1000;
   static constexpr uint16_t kMaxLiveSpeed = 1500;
   static constexpr uint16_t kMaxLiveAccel = 500;
+  static constexpr uint16_t kDebounceInterval = 25;
 
-  enum class MovementState { Stopped, Stepping, Rotating, Unknown };
+  bool in_maintenence_mode_{false};
+  enum class MovementState { Stopped, Home, Stepping, Rotating, Overrun, Unknown };
   MovementState activity_state_{MovementState::Stopped};
   std::array<uint32_t, kNumNamedStops> named_stops_;
   Stepper stepper_;
-  const int home_pin_ {0};
-  const int overrun_pin_{0};
+  Bounce home_pin_ ;
+  Bounce overrun_pin_;
   uint16_t run_speed{kMaxLiveSpeed};
   uint16_t run_accel{kMaxLiveAccel};
 
