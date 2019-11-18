@@ -20,8 +20,8 @@ class FloorController final : SafetyCriticalComponent {
  public:
   static constexpr uint8_t kNumNamedStops = 4;
 
-  FloorController(const int step_pin, const int dir_pin);
-  virtual ~FloorController();
+  FloorController(const int step_pin, const int dir_pin, const int home_pin, const int overrun_pin);
+  ~FloorController();
   bool seekToHome();
   bool moveToStop(uint8_t stop_number);
 
@@ -39,11 +39,17 @@ class FloorController final : SafetyCriticalComponent {
  private:
   static constexpr uint16_t kHomingSpeed = 1000;
   static constexpr uint16_t kHomingAccel = 1000;
+  static constexpr uint16_t kMaxLiveSpeed = 1500;
+  static constexpr uint16_t kMaxLiveAccel = 500;
 
   enum class MovementState { Stopped, Stepping, Rotating, Unknown };
   MovementState activity_state_{MovementState::Stopped};
   std::array<uint32_t, kNumNamedStops> named_stops_;
   Stepper stepper_;
+  const int home_pin_ {0};
+  const int overrun_pin_{0};
+  uint16_t run_speed{kMaxLiveSpeed};
+  uint16_t run_accel{kMaxLiveAccel};
 
   static StepControl step_controller;
   static RotateControl rotate_controller;
