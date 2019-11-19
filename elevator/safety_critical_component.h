@@ -22,7 +22,7 @@ class SafetyCriticalComponent {
 
   bool isSafe() { return safe_; }
 
- protected:
+//  protected:
   bool safe_;
 };
 

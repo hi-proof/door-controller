@@ -44,7 +44,7 @@ class CallPanel final {
   void setSevenSegment(uint8_t value);
   void setSevenSegment(char lchar, char rchar);
 
- private:
+//  private:
   FancyButton button_map_[_MAX_BUTTONS];
   ButtonPressCallback press_callbacks_[_MAX_BUTTONS];
   ButtonHoldCallback hold_callbacks_[_MAX_BUTTONS];

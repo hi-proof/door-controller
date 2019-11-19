@@ -41,7 +41,7 @@ class FloorController final : SafetyCriticalComponent {
   void enterSafeMode();
   void emergencyStop();
 
- private:
+//  private:
   uint32_t named_stops_[kNumNamedStops];
   Stepper stepper_;
   Bounce home_pin_ ;
