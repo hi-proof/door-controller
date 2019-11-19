@@ -124,31 +124,53 @@ class SSeg {
         return SEG_DP;
     }
   }
-};
 
-static uint8_t character(char c) {
-  switch (c) {
-    case '0':
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-      return digit(c - '0');
-    case '_':
-      return SEG_D;
-    case '-':
-      return SEG_G;
-    case 'L':
-      return SEG_F | SEG_E | SEG_D;
-    default:
-      return SEG_DP;
+  static uint8_t character(char c) {
+    switch (c) {
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        return SSeg::digit(c - '0');
+      case 'A':
+      case 'a':
+        return SEG_A | SEG_B | SEG_C | SEG_E | SEG_F | SEG_G;
+      case 'B':
+      case 'b':
+        return SEG_C | SEG_D | SEG_E | SEG_F | SEG_G;
+      case 'C':
+      case 'c':
+        return SEG_A | SEG_B | SEG_C | SEG_E | SEG_F | SEG_G;
+      case 'D':
+      case 'd':
+        return SEG_B | SEG_B | SEG_D | SEG_E | SEG_G;
+      case 'E':
+      case 'e':
+        return SEG_A | SEG_F | SEG_G | SEG_E | SEG_D;
+      case 'F':
+      case 'f':
+        return SEG_A | SEG_F | SEG_G | SEG_E;
+      case 'L':
+        return SEG_F | SEG_E | SEG_D;
+      case '_':
+        return SEG_D;
+      case '-':
+        return SEG_G;
+      case '>':
+        return SEG_G | SEG_B | SEG_C;
+      case '<':
+        return SEG_G | SEG_F | SEG_E;
+      default:
+        return SEG_DP;
+    }
   }
-}
+};
 
 namespace {
 

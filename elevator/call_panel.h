@@ -51,14 +51,14 @@ class CallPanel final {
   }
 
   void setSevenSegment(uint8_t value) {
-    seven_seg.values[0] = seven_seg.digit(value / 10);
-    seven_seg.values[0] = seven_seg.digit(value % 10);
+    seven_seg.values[0] = SSeg::digit(value / 10);
+    seven_seg.values[0] = SSeg::digit(value % 10);
     seven_seg.update();
   }
 
   void setSevenSegment(char lchar, char rchar) {
-    seven_seg.values[0] = seven_seg.character(lchar);
-    seven_seg.values[0] = seven_seg.character(rchar);
+    seven_seg.values[0] = SSeg::character(lchar);
+    seven_seg.values[0] = SSeg::character(rchar);
     seven_seg.update();
   }
 

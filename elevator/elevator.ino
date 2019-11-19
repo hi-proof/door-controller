@@ -16,7 +16,7 @@ namespace {
     DoorProgramming,
     Offline,
   };
-  DeviceStates current_state{DeviceStates::Normal};
+  DeviceStates current_state{DeviceStates::Uncalibrated};
 
 } // anonymous namespace
 
@@ -324,19 +324,15 @@ using FloorNames = hiproof::elevator::CallPanel;
 void EnterMaintenanceMode() {
   floor_ctrl.emergencyStop();
   current_state = DeviceStates::FloorProgramming;
-  call_panel.setButtonCallback(FloorNames::Open,
-                               []() -> void {
-                                 sseg.values[0] = SEG_G;
-                                 sseg.values[1] = SEG_G | SEG_B | SEG_C;
-                                 floor_ctrl.rotate(true);
-                               });
+  call_panel.setButtonCallback(FloorNames::Open, []() -> void {
+    call_panel.setSevenSegment('<', '>');
+    floor_ctrl.rotate(true);
+  });
 
-  call_panel.setButtonCallback(FloorNames::Close,
-                               []() -> void {
-                                 sseg.values[0] = SEG_G | SEG_F | SEG_E;
-                                 sseg.values[1] = SEG_G;
-                                 floor_ctrl.rotate(false);
-                               });
+  call_panel.setButtonCallback(FloorNames::Close, []() -> void {
+    call_panel.setSevenSegment('>', '<');
+    floor_ctrl.rotate(false);
+  });
 
   call_panel.setButtonCallback(FloorNames::Floor12, nullptr,
                                [](int t) -> void { floor_ctrl.setStop(0); });
@@ -347,8 +343,7 @@ void EnterMaintenanceMode() {
 
   call_panel.setButtonCallback(FloorNames::Bell,
                                []() -> void {
-                                 sseg.values[0] = SEG_G;
-                                 sseg.values[1] = SEG_G;
+                                 call_panel.setSevenSegment('-','-');
                                  floor_ctrl.stopRotation();
                                },
                                [](int t) -> void {
@@ -360,39 +355,28 @@ void EnterMaintenanceMode() {
 void ExitMaintenanceMode() { 
   floor_ctrl.emergencyStop();
   current_state = DeviceStates::Normal;
-  call_panel.setButtonCallback(FloorNames::Open,
-                               []() -> void {
-                                 sseg.values[0] = SEG_G;
-                                 sseg.values[1] = SEG_G | SEG_B | SEG_C;
-                                 call_panel.setSevenSegment('-','+')
-                                 floor_ctrl.rotate(true);
-                               });
+  call_panel.setButtonCallback(FloorNames::Open, []() -> void {
+    call_panel.setSevenSegment('<', '>');
+    floor_ctrl.rotate(true);
+  });
 
-  call_panel.setButtonCallback(FloorNames::Close,
-                               []() -> void {
-                                 sseg.values[0] = SEG_G | SEG_F | SEG_E;
-                                 sseg.values[1] = SEG_G;
-                                 floor_ctrl.rotate(false);
-                               });
+  call_panel.setButtonCallback(FloorNames::Close, []() -> void {
+    call_panel.setSevenSegment('>', '<');
+    floor_ctrl.rotate(false);
+  });
 
-  call_panel.setButtonCallback(FloorNames::Floor12,
-                               []() -> void {
-                                 sseg.values[0] = SSeg::digit(1);
-                                 sseg.values[1] = SSeg::digit(2);
-                                 floor_ctrl.moveToStop(0);
-                               });
-  call_panel.setButtonCallback(FloorNames::Floor13,
-                               []() -> void {
-                                 sseg.values[0] = SSeg::digit(1);
-                                 sseg.values[1] = SSeg::digit(3);
-                                 floor_ctrl.moveToStop(1);
-                               });
-  call_panel.setButtonCallback(FloorNames::Floor14,
-                               []() -> void {
-                                 sseg.values[0] = SSeg::digit(1);
-                                 sseg.values[1] = SSeg::digit(4);
-                                 floor_ctrl.moveToStop(2);
-                               });
+  call_panel.setButtonCallback(FloorNames::Floor12, []() -> void {
+    call_panel.setSevenSegment(12);
+    floor_ctrl.moveToStop(0);
+  });
+  call_panel.setButtonCallback(FloorNames::Floor13, []() -> void {
+    call_panel.setSevenSegment(13);
+    floor_ctrl.moveToStop(1);
+  });
+  call_panel.setButtonCallback(FloorNames::Floor14, []() -> void {
+    call_panel.setSevenSegment(14);
+    floor_ctrl.moveToStop(2);
+  });
 
   call_panel.setButtonCallback(FloorNames::Bell,
                                []() -> void { floor_ctrl.emergencyStop(); },
