@@ -9,10 +9,21 @@
 #ifndef HI_PROOF_CALL_PANEL_H_
 #define HI_PROOF_CALL_PANEL_H_
 
+#include "parallelio.h"
+
 namespace hiproof {
 namespace elevator {
 
-class CallPanel final {};
+class CallPanel final {
+    public:
+     enum ButtonNames {
+       Floor14 = 0,
+       MAX_BUTTONS,
+     };
+
+    private:
+     FancyButton button_map_[MAX_BUTTONS];
+};
 
 } // elevator
 } // hiproof

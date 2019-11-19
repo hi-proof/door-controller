@@ -7,8 +7,6 @@
 #ifndef HI_PROOF_FLOOR_CONTROLLER_H_
 #define HI_PROOF_FLOOR_CONTROLLER_H_
 
-#include <array>
-
 #include "safety_critical_component.h"
 #include "TeensyStep.h"
 #include "Bounce2.h"
@@ -49,7 +47,7 @@ class FloorController final : SafetyCriticalComponent {
   bool in_maintenence_mode_{false};
   enum class MovementState { Stopped, Home, Stepping, Rotating, Overrun, Unknown };
   MovementState activity_state_{MovementState::Stopped};
-  std::array<uint32_t, kNumNamedStops> named_stops_;
+  uint32_t named_stops_[kNumNamedStops];
   Stepper stepper_;
   Bounce home_pin_ ;
   Bounce overrun_pin_;

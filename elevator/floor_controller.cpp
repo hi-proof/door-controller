@@ -33,7 +33,7 @@ void FloorController::emergencyStop() {
 void FloorController::seekToHome() {
   stepper_.setMaxSpeed(run_speed);
   stepper_.setAcceleration(run_accel);
-  stepper_.setTargetAbs(named_stops_.at(0));
+  stepper_.setTargetAbs(named_stops_[0]);
   step_controller.moveAsync(stepper_);
 };
 
@@ -48,7 +48,7 @@ void FloorController::moveToStop(uint8_t stop_number) {
     }
     stepper_.setMaxSpeed(run_speed);
     stepper_.setAcceleration(run_accel);
-    stepper_.setTargetAbs(named_stops_.at(stop_number));
+    stepper_.setTargetAbs(named_stops_[stop_number]);
     step_controller.moveAsync(stepper_);
   }
 }
@@ -114,7 +114,7 @@ void FloorController::update() {
 void FloorController::enterMaintenanceMode() { in_maintenence_mode_ = true; }
 void FloorController::setStop(uint8_t stop_number) {
   if (in_maintenence_mode_ && stop_number > 0 && stop_number < kNumNamedStops) {
-    named_stops_.at(stop_number) = stepper_.getPosition();
+    named_stops_[stop_number] = stepper_.getPosition();
   }
 }
 void FloorController::rotate(bool clockwise) {
