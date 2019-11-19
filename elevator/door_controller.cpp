@@ -6,6 +6,9 @@
 
 using namespace hiproof::elevator;
 
+StepControl DoorController::step_controller{25};
+RotateControl DoorController::rotate_controller{25};
+
 DoorController::DoorController(const int d1_step_pin, const int d1_dir_pin,
                                const int d1_home_pin, const int d1_overrun_pin,
                                const int d2_step_pin, const int d2_dir_pin,

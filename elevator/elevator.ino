@@ -5,6 +5,7 @@
 
 #include "floor_controller.h"
 #include "call_panel.h"
+#include "door_controller.h"
 
 namespace {
   // Device states
@@ -26,6 +27,7 @@ RotateControl rc(25);
 
 hiproof::elevator::FloorController floor_ctrl{34, 33, 35, 36};
 hiproof::elevator::CallPanel call_panel{};
+hiproof::elevator::DoorController door_ctrl{38, 37, 32, 39, 38, 37, 32, 39};
 
 int32_t closed_position;
 
@@ -167,20 +169,20 @@ Bounce button_stop = Bounce();
 Door d2(38, 37, 32, 39);
 
 
-#define SW_DATA (26)
-#define SW_CLOCK (27)
-#define SW_LATCH (25)
-ParallelInputs buttons(SW_DATA, SW_CLOCK, SW_LATCH);
+// #define SW_DATA (26)
+// #define SW_CLOCK (27)
+// #define SW_LATCH (25)
+// ParallelInputs buttons(SW_DATA, SW_CLOCK, SW_LATCH);
 
-#define SSEG_DATA (5)
-#define SSEG_CLOCK (6)
-#define SSEG_LATCH (7) 
-SSeg sseg(SSEG_DATA, SSEG_CLOCK, SSEG_LATCH);
+// #define SSEG_DATA (5)
+// #define SSEG_CLOCK (6)
+// #define SSEG_LATCH (7) 
+// SSeg sseg(SSEG_DATA, SSEG_CLOCK, SSEG_LATCH);
 
-#define BL_DATA   (24)
-#define BL_CLOCK  (12)
-#define BL_LATCH  (4)
-ParallelOutputs button_leds(BL_DATA, BL_CLOCK, BL_LATCH);
+// #define BL_DATA   (24)
+// #define BL_CLOCK  (12)
+// #define BL_LATCH  (4)
+// ParallelOutputs button_leds(BL_DATA, BL_CLOCK, BL_LATCH);
 
 //void do_homing_cycle()
 //{
@@ -390,15 +392,14 @@ void maint_stop()
 }
 
 void loop() {
-  buttons.update();
+  // buttons.update();
 
   if (current_state == DeviceStates::FloorProgramming) {
     // button_bell.on = (millis() / 500) % 2 == 0;
     // button_open.on = true;
     // button_close.on = true;
 
-    sseg.values[0] = SEG_G;
-    sseg.values[1] = SEG_G;
+    call_panel.setSevenSegment('-', '-');
 
     // if (button_bell.on) {
     //   sseg.values[0] |= SEG_DP;
@@ -412,14 +413,15 @@ void loop() {
     // button_open.on = false;
     // button_close.on = false;
 
-    sseg.values[0] &= ~SEG_DP;
+    // sseg.values[0] &= ~SEG_DP;
 
   }
   
-  button_leds.update();
-  sseg.update();
+  // button_leds.update();
+  // sseg.update();
   floor_ctrl.update();
   call_panel.update();
+  door_ctrl.update();
 
   //Serial.println(buttons.values, BIN);
   //  Serial.printf("SW1: %d   SW2: %d\r\n", digitalRead(PIN_SW1), digitalRead(PIN_SW2));
