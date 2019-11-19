@@ -396,6 +396,7 @@ void loop() {
   
   button_leds.update();
   sseg.update();
+  fc.update();
 
   //Serial.println(buttons.values, BIN);
   //  Serial.printf("SW1: %d   SW2: %d\r\n", digitalRead(PIN_SW1), digitalRead(PIN_SW2));

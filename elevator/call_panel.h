@@ -16,10 +16,24 @@ namespace elevator {
 
 class CallPanel final {
     public:
-     enum ButtonNames {
-       Floor14 = 0,
+     enum {
+       Floor12 = 0,
+       Floor13,
+       Floor14,
+       Bell,
+       Close,
+       Open,
        MAX_BUTTONS,
      };
+
+     using ButtonPressCallback = void (*)(void);
+     using ButtonHoldCallback = void (*)(int);
+
+     CallPanel();
+     ~CallPanel();
+
+     void setButtonCallback(ButtonPressCallback on_press,
+                            ButtonHoldCallback on_hold);
 
     private:
      FancyButton button_map_[MAX_BUTTONS];
