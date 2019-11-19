@@ -199,7 +199,6 @@ class ParallelOutputPin : public OutputPin {
   ParallelOutputPin& operator=(ParallelOutputPin&& pop) {
     pin = pop.pin;
     po = pop.po;
-    setPinMode(pin, OUTPUT);
   }
 
   virtual void setPinMode(int pin, int mode) {
@@ -227,6 +226,15 @@ class FancyButton {
     on_on_press = true;
     held_called = true;
     on = false;
+  }
+  FancyButton(FancyButton& fb) : input(fb.input), out(fb.out) {}
+
+  FancyButton& operator=(FancyButton &&fb) {
+    input = ParallelBounce(fb.input);
+    out = ParallelOutputPin(fb.out);
+    held_called = fb.held_called;
+    on = fb.on;
+    on_on_press = fb.on_on_press;
   }
 
   void update(void (*pressed)() = NULL, void (*held)() = NULL) {
