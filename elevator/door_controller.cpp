@@ -20,13 +20,13 @@ DoorController::DoorController(const int d1_step_pin, const int d1_dir_pin,
                   .home_pin = Bounce(),
                   .overrun_pin = Bounce()} {
   left_door_.home_pin.attach(d1_home_pin, INPUT_PULLUP);
-  left_door_.home_pin.interval(kDebounceInterval);
+  left_door_.home_pin.interval(config::kPinDebounceInterval);
   left_door_.overrun_pin.attach(d1_overrun_pin, INPUT_PULLUP);
-  left_door_.overrun_pin.interval(kDebounceInterval);
+  left_door_.overrun_pin.interval(config::kPinDebounceInterval);
   right_door_.home_pin.attach(d2_home_pin, INPUT_PULLUP);
-  right_door_.home_pin.interval(kDebounceInterval);
+  right_door_.home_pin.interval(config::kPinDebounceInterval);
   right_door_.overrun_pin.attach(d2_overrun_pin, INPUT_PULLUP);
-  right_door_.overrun_pin.interval(kDebounceInterval);
+  right_door_.overrun_pin.interval(config::kPinDebounceInterval);
 }
 
 void DoorController::enterSafeMode() {
@@ -42,10 +42,11 @@ void DoorController::emergencyStop() {
 }
 
 void DoorController::open() {
-  left_door_.stepper.setMaxSpeed(-kMaxLiveSpeed);
-  right_door_.stepper.setMaxSpeed(kMaxLiveSpeed);
-  left_door_.stepper.setAcceleration(kMaxLiveAccel);
-  right_door_.stepper.setAcceleration(kMaxLiveAccel);
+  left_door_.stepper.setMaxSpeed(-config::kDoorMaxLiveSpeed);
+  right_door_.stepper.setMaxSpeed(config::kDoorMaxLiveSpeed);
+
+  left_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
+  right_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
   if (left_door_.home_pin.read() == 1 && right_door_.home_pin.read() == 1) {
     /// @todo open
     rotate_controller.rotateAsync(left_door_.stepper, right_door_.stepper);
@@ -61,10 +62,12 @@ void DoorController::open() {
 }
 
 void DoorController::close() {
-  left_door_.stepper.setMaxSpeed(kMaxLiveSpeed);
-  right_door_.stepper.setMaxSpeed(-kMaxLiveSpeed);
-  left_door_.stepper.setAcceleration(kMaxLiveAccel);
-  right_door_.stepper.setAcceleration(kMaxLiveAccel);
+  left_door_.stepper.setMaxSpeed(config::kDoorMaxLiveSpeed);
+  right_door_.stepper.setMaxSpeed(-config::kDoorMaxLiveSpeed);
+
+  left_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
+  right_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
+
   if (left_door_.overrun_pin.read() == 1 && right_door_.overrun_pin.read() == 1) {
     /// @todo close
     rotate_controller.rotateAsync(left_door_.stepper, right_door_.stepper);

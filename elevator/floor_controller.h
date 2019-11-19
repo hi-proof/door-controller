@@ -7,9 +7,10 @@
 #ifndef HI_PROOF_FLOOR_CONTROLLER_H_
 #define HI_PROOF_FLOOR_CONTROLLER_H_
 
-#include "safety_critical_component.h"
-#include "TeensyStep.h"
 #include "Bounce2.h"
+#include "TeensyStep.h"
+#include "elevator_config.h"
+#include "safety_critical_component.h"
 
 namespace hiproof {
 

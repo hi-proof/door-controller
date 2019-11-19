@@ -10,6 +10,7 @@
 #define HI_PROOF_CALL_PANEL_H_
 
 #include "parallelio.h"
+#include "elevator_config.h"
 
 namespace hiproof {
 namespace elevator {

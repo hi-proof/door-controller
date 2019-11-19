@@ -16,9 +16,9 @@ FloorController::FloorController(const int step_pin, const int dir_pin,
                                  const int home_pin, const int overrun_pin)
     : named_stops_{}, stepper_{step_pin, dir_pin}, home_pin_{}, overrun_pin_{} {
   home_pin_.attach(home_pin, INPUT_PULLUP);
-  home_pin_.interval(kDebounceInterval);
+  home_pin_.interval(config::kPinDebounceInterval);
   overrun_pin_.attach(overrun_pin, INPUT_PULLUP);
-  overrun_pin_.interval(kDebounceInterval);
+  overrun_pin_.interval(config::kPinDebounceInterval);
 }
 
 FloorController::~FloorController() {}
@@ -83,8 +83,8 @@ void FloorController::rotate(bool clockwise) {
     return;
   }
   rotate_controller.stop();
-  stepper_.setMaxSpeed(clockwise ? kHomingSpeed : -kHomingSpeed);
-  stepper_.setAcceleration(kHomingAccel);
+  stepper_.setMaxSpeed(clockwise ? config::kFloorHomingSpeed : -config::kFloorHomingSpeed);
+  stepper_.setAcceleration(config::kFloorHomingAccel);
   rotate_controller.rotateAsync(stepper_);
 }
 void FloorController::stopRotation() { rotate_controller.stopAsync(); }

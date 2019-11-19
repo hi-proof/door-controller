@@ -3,9 +3,10 @@
 #include "Bounce2.h"
 #include "parallelio.h"
 
-#include "floor_controller.h"
 #include "call_panel.h"
 #include "door_controller.h"
+#include "elevator_config.h"
+#include "floor_controller.h"
 
 namespace {
   // Device states
