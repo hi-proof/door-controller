@@ -85,7 +85,7 @@ void FloorController::update() {
   }
 }
 
-void FloorController::stopAsync() {
+void FloorController::stop() {
   stopRotateController();
   stopStepController();
 }

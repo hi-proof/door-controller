@@ -26,7 +26,7 @@ class FloorController final : SafetyCriticalComponent {
   void seekToHome();
   void moveToStop(uint8_t stop_number);
   void update();
-  void stopAsync();
+  void stop();
 
   // API for "maintenance mode" tasks
   void setStop(uint8_t stop_number);
