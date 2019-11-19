@@ -59,6 +59,10 @@ void DoorController::emergencyStop() {
   rotate_controller.emergencyStop();
 }
 
+void DoorController::init() {
+  /// @todo Interactive door setup (through CLI?)
+}
+
 void DoorController::open() {
   left_door_.stepper.setMaxSpeed(-config::kDoorMaxLiveSpeed);
   right_door_.stepper.setMaxSpeed(-config::kDoorMaxLiveSpeed);

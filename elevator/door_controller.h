@@ -30,6 +30,9 @@ class DoorController final : SafetyCriticalComponent {
   ~DoorController(){};
   void enterSafeMode();
   void emergencyStop();
+  
+  // This function is for non automatic init (actual hardware control)
+  void init();
 
   void open();
   void close();

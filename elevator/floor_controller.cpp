@@ -50,6 +50,10 @@ void FloorController::emergencyStop() {
   rc_active = false;
 };
 
+void FloorController::init() {
+  /// @todo interactive homing routine and floor selection?
+}
+
 void FloorController::seekToHome() {
   stepper_.setMaxSpeed(run_speed);
   stepper_.setAcceleration(run_accel);

@@ -9,6 +9,8 @@ namespace hiproof {
 namespace elevator {
 namespace config {
 
+constexpr bool kSystemDebugCLI = true;
+
 using EthernetConnectorPins = struct {
   int step_pin;
   int dir_pin;

@@ -12,7 +12,7 @@ namespace {
 // Device states
 
 enum class DeviceStates : uint8_t {
-  Normal,
+  Default,
   Uncalibrated,
   FloorProgramming,
   DoorProgramming,
@@ -22,9 +22,8 @@ DeviceStates current_state{DeviceStates::Uncalibrated};
 
 }  // anonymous namespace
 
-// Stepper s1(34, 33);
-StepControl controller(25);
-RotateControl rc(25);
+StepControl controller{25};
+RotateControl rc{25};
 
 hiproof::elevator::FloorController floor_ctrl{34, 33, 35, 36};
 hiproof::elevator::CallPanel call_panel{};
@@ -148,17 +147,17 @@ class Door {
   }
 };
 
-int32_t motor_speed = 400;
-int32_t motor_accel = 500;
+// int32_t motor_speed = 400;
+// int32_t motor_accel = 500;
 //
 // int32_t open_position = 0;
 // int32_t closed_position;
 
-Bounce button_start = Bounce();
-Bounce button_stop = Bounce();
+// Bounce button_start = Bounce();
+// Bounce button_stop = Bounce();
 
 // Door d1(34, 33, 35, 36);
-Door d2(38, 37, 32, 39);
+// Door d2(38, 37, 32, 39);
 
 // #define SW_DATA (26)
 // #define SW_CLOCK (27)
@@ -204,6 +203,8 @@ Door d2(38, 37, 32, 39);
 // const int clockPin = 6;
 // const int dataPin = 5;
 
+void EnterUncalibratedMode();
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -211,30 +212,47 @@ void setup() {
   digitalWrite(13, HIGH);
 
   Serial.begin(9600);
-  shell_init(shell_reader, shell_writer, PSTR("Hi-Proof elevatormatic"));
 
-  shell_register(command_home, PSTR("home"));
-  //  shell_register(command_info, PSTR("info"));
-  shell_register(command_open, PSTR("open"));
-  shell_register(command_close, PSTR("close"));
-  //  shell_register(command_move, PSTR("move"));
+  if (hiproof::elevator::config::kSystemDebugCLI) {
+    shell_init(shell_reader, shell_writer, PSTR("Hi-Proof elevatormatic"));
 
-  // shell_register(command_go, PSTR("g"));
-  // shell_register(command_back, PSTR("b"));
-  // shell_register(command_halt, PSTR("h"));
-  shell_register(command_estop, PSTR("e"));
-  // shell_register(command_motor, PSTR("m"));
-  //  shell_register(command_motor, PSTR("m"));
+    shell_register(command_home, PSTR("home"));
+    //  shell_register(command_info, PSTR("info"));
+    shell_register(command_open, PSTR("open"));
+    shell_register(command_close, PSTR("close"));
+    //  shell_register(command_move, PSTR("move"));
 
-  // command_home(0, NULL);
-  ExitMaintenanceMode();
+    // shell_register(command_go, PSTR("g"));
+    // shell_register(command_back, PSTR("b"));
+    // shell_register(command_halt, PSTR("h"));
+    shell_register(command_estop, PSTR("e"));
+    // shell_register(command_motor, PSTR("m"));
+    //  shell_register(command_motor, PSTR("m"));
+
+    shell_register([](int argc, char** argv) { return SHELL_RET_SUCCESS; },
+                  PSTR("floor_home"));
+  }
+  EnterUncalibratedMode();
 }
 
-void on_press() { Serial.printf("Pressed\r\n"); }
+// void on_press() { Serial.printf("Pressed\r\n"); }
 
-void on_hold() { Serial.printf("Held\r\n"); }
+// void on_hold() { Serial.printf("Held\r\n"); }
 
 using FloorNames = hiproof::elevator::CallPanel;
+
+void EnterUncalibratedMode() {
+  current_state = DeviceStates::Uncalibrated;
+  call_panel.setButtonCallback(FloorNames::Open, nullptr, nullptr);
+  call_panel.setButtonCallback(FloorNames::Close, nullptr, nullptr);
+  call_panel.setButtonCallback(FloorNames::Bell, nullptr, nullptr);
+  call_panel.setButtonCallback(FloorNames::Floor12, nullptr, nullptr);
+  call_panel.setButtonCallback(FloorNames::Floor13, nullptr, nullptr);
+  call_panel.setButtonCallback(FloorNames::Floor14, nullptr, nullptr);
+  floor_ctrl.init();
+  door_ctrl.init();
+  EnterDefaultMode();
+}
 
 void EnterMaintenanceMode() {
   floor_ctrl.stop();
@@ -263,13 +281,13 @@ void EnterMaintenanceMode() {
                                },
                                [](int t) -> void {
                                  floor_ctrl.stop();
-                                 ExitMaintenanceMode();
+                                 EnterDefaultMode();
                                });
 }
 
-void ExitMaintenanceMode() {
+void EnterDefaultMode() {
   floor_ctrl.stop();
-  current_state = DeviceStates::Normal;
+  current_state = DeviceStates::Default;
   call_panel.setButtonCallback(
       FloorNames::Open, []() -> void { call_panel.setSevenSegment('<', '>'); });
 
@@ -343,7 +361,9 @@ void loop() {
   //    rc.emergencyStop();
   //  }
 
-  shell_task();
+  if (hiproof::elevator::config::kSystemDebugCLI) {
+    shell_task();
+  }
 }
 
 //-------------------------------------------------------------------------------------------

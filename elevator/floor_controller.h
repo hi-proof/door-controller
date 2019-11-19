@@ -23,6 +23,10 @@ class FloorController final : SafetyCriticalComponent {
   FloorController(const int step_pin, const int dir_pin, const int home_pin, const int overrun_pin);
   FloorController(config::EthernetConnectorPins conn);
   ~FloorController();
+
+  // This function is for non automatic init (actual hardware control)
+  void init();
+
   void seekToHome();
   void moveToStop(uint8_t stop_number);
   void update();
