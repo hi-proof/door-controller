@@ -11,8 +11,10 @@ namespace {
 
   enum class DeviceStates : uint8_t {
     Normal,
+    Uncalibrated,
     FloorProgramming,
     DoorProgramming,
+    Offline,
   };
   DeviceStates current_state{DeviceStates::Normal};
 
@@ -22,7 +24,7 @@ namespace {
 StepControl controller(25);
 RotateControl rc(25);
 
-hiproof::elevator::FloorController fc{34, 33, 35, 36};
+hiproof::elevator::FloorController floor_ctrl{34, 33, 35, 36};
 hiproof::elevator::CallPanel call_panel{};
 
 int32_t closed_position;
@@ -320,79 +322,80 @@ void maint_start()
 using FloorNames = hiproof::elevator::CallPanel;
 
 void EnterMaintenanceMode() {
-  fc.emergencyStop();
+  floor_ctrl.emergencyStop();
   current_state = DeviceStates::FloorProgramming;
   call_panel.setButtonCallback(FloorNames::Open,
                                []() -> void {
                                  sseg.values[0] = SEG_G;
                                  sseg.values[1] = SEG_G | SEG_B | SEG_C;
-                                 fc.rotate(true);
+                                 floor_ctrl.rotate(true);
                                });
 
   call_panel.setButtonCallback(FloorNames::Close,
                                []() -> void {
                                  sseg.values[0] = SEG_G | SEG_F | SEG_E;
                                  sseg.values[1] = SEG_G;
-                                 fc.rotate(false);
+                                 floor_ctrl.rotate(false);
                                });
 
   call_panel.setButtonCallback(FloorNames::Floor12, nullptr,
-                               [](int t) -> void { fc.setStop(0); });
+                               [](int t) -> void { floor_ctrl.setStop(0); });
   call_panel.setButtonCallback(FloorNames::Floor13, nullptr,
-                               [](int t) -> void { fc.setStop(1); });
+                               [](int t) -> void { floor_ctrl.setStop(1); });
   call_panel.setButtonCallback(FloorNames::Floor14, nullptr,
-                               [](int t) -> void { fc.setStop(2); });
+                               [](int t) -> void { floor_ctrl.setStop(2); });
 
   call_panel.setButtonCallback(FloorNames::Bell,
                                []() -> void {
                                  sseg.values[0] = SEG_G;
                                  sseg.values[1] = SEG_G;
-                                 fc.stopRotation();
+                                 floor_ctrl.stopRotation();
                                },
                                [](int t) -> void {
-                                 fc.emergencyStop();
+                                 floor_ctrl.emergencyStop();
                                  ExitMaintenanceMode();
                                });
 }
 
 void ExitMaintenanceMode() { 
-  fc.emergencyStop();
+  floor_ctrl.emergencyStop();
   current_state = DeviceStates::Normal;
   call_panel.setButtonCallback(FloorNames::Open,
                                []() -> void {
                                  sseg.values[0] = SEG_G;
                                  sseg.values[1] = SEG_G | SEG_B | SEG_C;
-                                 fc.rotate(true);
+                                 call_panel.setSevenSegment('-','+')
+                                 floor_ctrl.rotate(true);
                                });
 
   call_panel.setButtonCallback(FloorNames::Close,
                                []() -> void {
                                  sseg.values[0] = SEG_G | SEG_F | SEG_E;
                                  sseg.values[1] = SEG_G;
-                                 fc.rotate(false);
+                                 floor_ctrl.rotate(false);
                                });
 
   call_panel.setButtonCallback(FloorNames::Floor12,
                                []() -> void {
                                  sseg.values[0] = SSeg::digit(1);
                                  sseg.values[1] = SSeg::digit(2);
-                                 fc.moveToStop(0);
+                                 floor_ctrl.moveToStop(0);
                                });
   call_panel.setButtonCallback(FloorNames::Floor13,
                                []() -> void {
                                  sseg.values[0] = SSeg::digit(1);
                                  sseg.values[1] = SSeg::digit(3);
-                                 fc.moveToStop(1);
+                                 floor_ctrl.moveToStop(1);
                                });
   call_panel.setButtonCallback(FloorNames::Floor14,
                                []() -> void {
                                  sseg.values[0] = SSeg::digit(1);
                                  sseg.values[1] = SSeg::digit(4);
-                                 fc.moveToStop(2);
+                                 floor_ctrl.moveToStop(2);
                                });
 
   call_panel.setButtonCallback(FloorNames::Bell,
-                               []() -> void { fc.emergencyStop(); },
+                               []() -> void { floor_ctrl.emergencyStop(); },
                                [](int t) -> void { EnterMaintenanceMode(); });
 }
 
@@ -431,7 +434,7 @@ void loop() {
   
   button_leds.update();
   sseg.update();
-  fc.update();
+  floor_ctrl.update();
   call_panel.update();
 
   //Serial.println(buttons.values, BIN);

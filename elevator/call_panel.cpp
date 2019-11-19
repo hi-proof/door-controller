@@ -6,7 +6,7 @@
 
 using namespace hiproof::elevator;
 
-CallPanel::CallPanel() {
+CallPanel::CallPanel() : seven_seg{default_sseg} {
   button_map_[Floor12] = FancyButton(ParallelBounce(default_buttons, 0),
                                      ParallelOutputPin(default_button_leds, 3));
   button_map_[Floor13] = FancyButton(ParallelBounce(default_buttons, 1),

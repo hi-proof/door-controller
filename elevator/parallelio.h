@@ -126,6 +126,30 @@ class SSeg {
   }
 };
 
+static uint8_t character(char c) {
+  switch (c) {
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+      return digit(c - '0');
+    case '_':
+      return SEG_D;
+    case '-':
+      return SEG_G;
+    case 'L':
+      return SEG_F | SEG_E | SEG_D;
+    default:
+      return SEG_DP;
+  }
+}
+
 namespace {
 
 constexpr int SW_DATA{26};
@@ -191,10 +215,7 @@ class ParallelOutputPin : public OutputPin {
   ParallelOutputPin(ParallelOutputs& po, uint8_t pin)
       : po(po), OutputPin(pin) {}
   ParallelOutputPin(const ParallelOutputPin& pop)
-      : po(pop.po),
-        OutputPin(pop.pin){
-
-        }
+      : po(pop.po), OutputPin(pop.pin) {}
 
   ParallelOutputPin& operator=(ParallelOutputPin&& pop) {
     pin = pop.pin;
@@ -229,7 +250,7 @@ class FancyButton {
   }
   FancyButton(FancyButton& fb) : input(fb.input), out(fb.out) {}
 
-  FancyButton& operator=(FancyButton &&fb) {
+  FancyButton& operator=(FancyButton&& fb) {
     input = ParallelBounce(fb.input);
     out = ParallelOutputPin(fb.out);
     held_called = fb.held_called;

@@ -47,12 +47,26 @@ class CallPanel final {
     for (int i = 0; i < _MAX_BUTTONS; ++i) {
       button_map_[i].update(press_callbacks_[i], hold_callbacks[i]);
     }
+    seven_seg.update();
+  }
+
+  void setSevenSegment(uint8_t value) {
+    seven_seg.values[0] = seven_seg.digit(value / 10);
+    seven_seg.values[0] = seven_seg.digit(value % 10);
+    seven_seg.update();
+  }
+
+  void setSevenSegment(char lchar, char rchar) {
+    seven_seg.values[0] = seven_seg.character(lchar);
+    seven_seg.values[0] = seven_seg.character(rchar);
+    seven_seg.update();
   }
 
  private:
   FancyButton button_map_[_MAX_BUTTONS];
   ButtonPressCallback press_callbacks_[_MAX_BUTTONS];
   ButtonHoldCallback hold_callbacks[_MAX_BUTTONS];
+  SSeg seven_seg;
 };
 
 }  // namespace elevator
