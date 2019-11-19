@@ -30,7 +30,7 @@ DoorController::DoorController(const int d1_step_pin, const int d1_dir_pin,
 }
 
 DoorController::DoorController(config::EthernetConnectorPins left,
-               config::EthernetConnectorPins right)
+                               config::EthernetConnectorPins right)
     : left_door_{.stepper = Stepper(left.step_pin, left.dir_pin),
                  .home_pin = Bounce(),
                  .overrun_pin = Bounce()},
@@ -97,7 +97,8 @@ void DoorController::close() {
   left_door_.stepper.setTargetAbs(left_door_.max_travel);
   right_door_.stepper.setTargetAbs(right_door_.max_travel);
 
-  if (left_door_.overrun_pin.read() == 1 && right_door_.overrun_pin.read() == 1) {
+  if (left_door_.overrun_pin.read() == 1 &&
+      right_door_.overrun_pin.read() == 1) {
     step_controller.moveAsync(left_door_.stepper, right_door_.stepper);
   } else {
     if (left_door_.overrun_pin.read() == 1) {
@@ -132,7 +133,6 @@ void DoorController::update() {
     /// @todo continue moving left door until stop
   }
 }
-
 
 // Some debug functionality
 void DoorController::openLeft() {

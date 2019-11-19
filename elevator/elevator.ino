@@ -25,9 +25,11 @@ DeviceStates current_state{DeviceStates::Uncalibrated};
 StepControl controller{25};
 RotateControl rc{25};
 
-hiproof::elevator::FloorController floor_ctrl{34, 33, 35, 36};
+using namespace hiproof::elevator;
+
+hiproof::elevator::FloorController floor_ctrl{config::kEthPortA};
 hiproof::elevator::CallPanel call_panel{};
-hiproof::elevator::DoorController door_ctrl{38, 37, 32, 39, 38, 37, 32, 39};
+hiproof::elevator::DoorController door_ctrl{config::kEthPortB, config::kEthPortC};
 
 int32_t closed_position;
 

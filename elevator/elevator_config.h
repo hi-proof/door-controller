@@ -11,24 +11,24 @@ namespace config {
 
 constexpr bool kSystemDebugCLI = true;
 
-using EthernetConnectorPins = struct {
+using EthernetConnectorPins = struct EthernetConnectorPin_t {
   int step_pin;
   int dir_pin;
   int home_pin;
   int overrun_pin;
 };
 
-constexpr EthernetConnectorPins kEthPort1 = {
+constexpr EthernetConnectorPins kEthPortA = {
     .step_pin = 34, .dir_pin = 33, .home_pin = 35, .overrun_pin = 36};
 
-constexpr EthernetConnectorPins kEthPort2 = {
-    .step_pin = 34, .dir_pin = 33, .home_pin = 35, .overrun_pin = 36};
+constexpr EthernetConnectorPins kEthPortB = {
+    .step_pin = 38, .dir_pin = 37, .home_pin = 39, .overrun_pin = 32};
 
-constexpr EthernetConnectorPins kEthPort3 = {
-    .step_pin = 34, .dir_pin = 33, .home_pin = 35, .overrun_pin = 36};
+constexpr EthernetConnectorPins kEthPortC = {
+    .step_pin = 30, .dir_pin = 31, .home_pin = 29, .overrun_pin = 28};
 
-constexpr EthernetConnectorPins kEthPort4 = {
-    .step_pin = 34, .dir_pin = 33, .home_pin = 35, .overrun_pin = 36};
+constexpr EthernetConnectorPins kEthPortD = {
+    .step_pin = 19, .dir_pin = 18, .home_pin = 11, .overrun_pin = 9};
 
 static constexpr uint16_t kFloorHomingSpeed = 1000;
 static constexpr uint16_t kFloorHomingAccel = 1000;
