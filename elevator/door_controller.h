@@ -30,6 +30,7 @@ class DoorController final : SafetyCriticalComponent {
 
   void open();
   void close();
+  void update();
 
  private:
   static constexpr uint16_t kHomingSpeed = 1000;
