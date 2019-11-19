@@ -34,6 +34,17 @@ class DoorController final : SafetyCriticalComponent {
   void open();
   void close();
   void update();
+  void stopAsync();
+  void homingRoutine();
+
+  // Debug seperation
+  void openLeft();
+  void closeLeft();
+  void homeLeft();
+
+  void openRight();
+  void closeRight();
+  void homeRight();
 
  private:
 
@@ -41,12 +52,13 @@ class DoorController final : SafetyCriticalComponent {
     Stepper stepper;
     Bounce home_pin;
     Bounce overrun_pin;
+    uint16_t max_travel;
   };
 
   DoorData left_door_;
   DoorData right_door_;
-  uint16_t run_speed{config::kDoorMaxLiveSpeed};
-  uint16_t run_accel{config::kDoorMaxLiveAccel};
+  uint16_t run_speed_{config::kDoorMaxLiveSpeed};
+  uint16_t run_accel_{config::kDoorMaxLiveAccel};
 
   static StepControl step_controller;
   static RotateControl rotate_controller;

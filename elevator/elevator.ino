@@ -213,16 +213,16 @@ void setup() {
   Serial.begin(9600);
   shell_init(shell_reader, shell_writer, PSTR("Hi-Proof elevatormatic"));
 
-  //  shell_register(command_home, PSTR("home"));
+  shell_register(command_home, PSTR("home"));
   //  shell_register(command_info, PSTR("info"));
-  //  shell_register(command_open, PSTR("open"));
-  //  shell_register(command_close, PSTR("close"));
+  shell_register(command_open, PSTR("open"));
+  shell_register(command_close, PSTR("close"));
   //  shell_register(command_move, PSTR("move"));
 
   // shell_register(command_go, PSTR("g"));
   // shell_register(command_back, PSTR("b"));
   // shell_register(command_halt, PSTR("h"));
-  // shell_register(command_estop, PSTR("e"));
+  shell_register(command_estop, PSTR("e"));
   // shell_register(command_motor, PSTR("m"));
   //  shell_register(command_motor, PSTR("m"));
 
@@ -270,9 +270,8 @@ void EnterMaintenanceMode() {
 void ExitMaintenanceMode() {
   floor_ctrl.stop();
   current_state = DeviceStates::Normal;
-  call_panel.setButtonCallback(FloorNames::Open, []() -> void {
-    call_panel.setSevenSegment('<', '>');
-  });
+  call_panel.setButtonCallback(
+      FloorNames::Open, []() -> void { call_panel.setSevenSegment('<', '>'); });
 
   call_panel.setButtonCallback(FloorNames::Close, []() -> void {
     call_panel.setSevenSegment('>', '<');
@@ -297,7 +296,6 @@ void ExitMaintenanceMode() {
 }
 
 void loop() {
-
   floor_ctrl.update();
   call_panel.update();
   door_ctrl.update();
@@ -351,44 +349,39 @@ void loop() {
 //-------------------------------------------------------------------------------------------
 // CLI
 
-// int command_home(int argc, char** argv)
-// {
-//   shell_printf("Starting D1 homing cycle\r\n");
-//   d1.homing_cycle();
-//   shell_printf("D1 closed position: %d\r\n", d1.pos_closed);
+int command_home(int argc, char** argv) {
+  shell_printf("Starting D1 homing cycle\r\n");
+  door_ctrl.homeLeft();
+  // shell_printf("D1 closed position: %d\r\n", d1.pos_closed);
 
-//   shell_printf("Starting D2 homing cycle\r\n");
-//   d2.homing_cycle();
-//   shell_printf("D1 closed position: %d\r\n", d2.pos_closed);
+  shell_printf("Starting D2 homing cycle\r\n");
+  door_ctrl.homeRight();
+  // shell_printf("D1 closed position: %d\r\n", d2.pos_closed);
 
-//   return SHELL_RET_SUCCESS;
-// }
+  return SHELL_RET_SUCCESS;
+}
 
-// int command_info(int argc, char ** argv)
-// {
+// int command_info(int argc, char** argv) {
 //   shell_printf("D1 SW1: %d   SW2: %d   Pos: %d\r\n", digitalRead(d1.pin_sw1),
-//   digitalRead(d1.pin_sw2), d1.s.getPosition()); shell_printf("D2 SW1: %d SW2:
-//   %d   Pos: %d\r\n", digitalRead(d2.pin_sw1), digitalRead(d2.pin_sw2),
-//   d2.s.getPosition()); return SHELL_RET_SUCCESS;
-// }
-
-// int command_open(int argc, char ** argv)
-// {
-//   d1.s.setTargetAbs(0);
-//   d2.s.setTargetAbs(0);
-//   controller.move(d1.s, d2.s);
+//                digitalRead(d1.pin_sw2), d1.s.getPosition());
+//   shell_printf("D2 SW1: %d SW2:
+//                    % d Pos
+//                : % d\r\n ", digitalRead(d2.pin_sw1), digitalRead(d2.pin_sw2),
+//                      d2.s.getPosition());
 //   return SHELL_RET_SUCCESS;
 // }
 
-// int command_close(int argc, char ** argv)
-// {
-//   d1.s.setTargetAbs(d1.pos_closed);
-//   d2.s.setTargetAbs(d2.pos_closed);
-//   controller.move(d1.s, d2.s);
-//   return SHELL_RET_SUCCESS;
-// }
+int command_open(int argc, char** argv) {
+  door_ctrl.open();
+  return SHELL_RET_SUCCESS;
+}
 
-// int command_move(int argc, char ** argv) {
+int command_close(int argc, char** argv) {
+  door_ctrl.close();
+  return SHELL_RET_SUCCESS;
+}
+
+// int command_move(int argc, char** argv) {
 //   if (argc >= 2) {
 //     int new_pos = atoi(argv[1]);
 //     d1.s.setTargetRel(new_pos);
@@ -396,33 +389,29 @@ void loop() {
 //   }
 // }
 
-// int command_go(int argc, char ** argv)
-// {
-//    d1.s.setMaxSpeed(motor_speed);
-//    d1.s.setAcceleration(motor_accel);
-//    rc.rotateAsync(d1.s);
-//    return SHELL_RET_SUCCESS;
+// int command_go(int argc, char** argv) {
+//   d1.s.setMaxSpeed(motor_speed);
+//   d1.s.setAcceleration(motor_accel);
+//   rc.rotateAsync(d1.s);
+//   return SHELL_RET_SUCCESS;
 // }
 
-// int command_back(int argc, char ** argv)
-// {
+// int command_back(int argc, char** argv) {
 //   d1.s.setMaxSpeed(-motor_speed);
 //   d1.s.setAcceleration(motor_accel);
-//    rc.rotateAsync(d1.s);
-//    return SHELL_RET_SUCCESS;
+//   rc.rotateAsync(d1.s);
+//   return SHELL_RET_SUCCESS;
 // }
 
-// int command_halt(int argc, char ** argv)
-// {
-//    rc.stopAsync();
-//    return SHELL_RET_SUCCESS;
-// }
+int command_halt(int argc, char** argv) {
+  door_ctrl.stopAsync();
+  return SHELL_RET_SUCCESS;
+}
 
-// int command_estop(int argc, char ** argv)
-// {
-//    rc.emergencyStop();
-//    return SHELL_RET_SUCCESS;
-// }
+int command_estop(int argc, char** argv) {
+  door_ctrl.emergencyStop();
+  return SHELL_RET_SUCCESS;
+}
 
 // int command_motor(int argc, char** argv)
 // {

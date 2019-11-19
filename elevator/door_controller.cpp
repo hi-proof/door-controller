@@ -61,54 +61,64 @@ void DoorController::emergencyStop() {
 
 void DoorController::open() {
   left_door_.stepper.setMaxSpeed(-config::kDoorMaxLiveSpeed);
-  right_door_.stepper.setMaxSpeed(config::kDoorMaxLiveSpeed);
+  right_door_.stepper.setMaxSpeed(-config::kDoorMaxLiveSpeed);
 
   left_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
   right_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
+
+  left_door_.stepper.setTargetAbs(0);
+  right_door_.stepper.setTargetAbs(0);
+
   if (left_door_.home_pin.read() == 1 && right_door_.home_pin.read() == 1) {
     /// @todo open
-    rotate_controller.rotateAsync(left_door_.stepper, right_door_.stepper);
+    step_controller.moveAsync(left_door_.stepper, right_door_.stepper);
   } else {
     if (left_door_.home_pin.read() == 1) {
       /// @todo open only left
-      rotate_controller.rotateAsync(left_door_.stepper);
+      step_controller.moveAsync(left_door_.stepper);
     } else {
       /// @todo open only right
-      rotate_controller.rotateAsync(right_door_.stepper);
+      step_controller.moveAsync(right_door_.stepper);
     }
   }
 }
 
 void DoorController::close() {
   left_door_.stepper.setMaxSpeed(config::kDoorMaxLiveSpeed);
-  right_door_.stepper.setMaxSpeed(-config::kDoorMaxLiveSpeed);
+  right_door_.stepper.setMaxSpeed(config::kDoorMaxLiveSpeed);
 
   left_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
   right_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
 
+  left_door_.stepper.setTargetAbs(left_door_.max_travel);
+  right_door_.stepper.setTargetAbs(right_door_.max_travel);
+
   if (left_door_.overrun_pin.read() == 1 && right_door_.overrun_pin.read() == 1) {
-    /// @todo close
-    rotate_controller.rotateAsync(left_door_.stepper, right_door_.stepper);
+    step_controller.moveAsync(left_door_.stepper, right_door_.stepper);
   } else {
     if (left_door_.overrun_pin.read() == 1) {
-      /// @todo close only left
-      rotate_controller.rotateAsync(left_door_.stepper);
+      step_controller.moveAsync(left_door_.stepper);
     } else {
-      /// @todo close only right
-      rotate_controller.rotateAsync(right_door_.stepper);
+      step_controller.moveAsync(right_door_.stepper);
     }
   }
+}
+
+void DoorController::stopAsync() { step_controller.stopAsync(); }
+
+void DoorController::homingRoutine() {
+  /// @todo Can we home asyncronously?
 }
 
 void DoorController::update() {
   bool left_stopped = false;
   bool right_stopped = false;
   if (left_door_.overrun_pin.fell() || left_door_.home_pin.fell()) {
-    rotate_controller.stop();
+    step_controller.stop();
     left_stopped = true;
   }
   if (right_door_.overrun_pin.fell() || right_door_.home_pin.fell()) {
-    rotate_controller.stop();
+    step_controller.stop();
     right_stopped = true;
   } else if (left_stopped) {
     /// @todo continue with moving right door until stop
@@ -117,4 +127,112 @@ void DoorController::update() {
       left_door_.home_pin.read() == left_door_.overrun_pin.read()) {
     /// @todo continue moving left door until stop
   }
+}
+
+
+// Some debug functionality
+void DoorController::openLeft() {
+  left_door_.stepper.setMaxSpeed(-config::kDoorMaxLiveSpeed);
+
+  left_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
+
+  left_door_.stepper.setTargetAbs(0);
+
+  if (left_door_.home_pin.read() == 1) {
+    step_controller.moveAsync(left_door_.stepper);
+  }
+}
+void DoorController::closeLeft() {
+  left_door_.stepper.setMaxSpeed(config::kDoorMaxLiveSpeed);
+
+  left_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
+
+  left_door_.stepper.setTargetAbs(left_door_.max_travel);
+
+  if (left_door_.overrun_pin.read() == 1) {
+    step_controller.moveAsync(left_door_.stepper);
+  }
+}
+void DoorController::homeLeft() {
+  left_door_.stepper.setAcceleration(config::kDoorHomingAccel);
+
+  // open first
+  if (!left_door_.home_pin.read()) {
+    left_door_.stepper.setMaxSpeed(-config::kDoorHomingSpeed);
+    rotate_controller.rotateAsync(left_door_.stepper);
+    while (!left_door_.home_pin.read())
+      ;
+    rotate_controller.stop();
+  }
+
+  // reset the open position to 0
+  left_door_.stepper.setPosition(0);
+  left_door_.stepper.setMaxSpeed(config::kDoorHomingSpeed);
+
+  if (!left_door_.overrun_pin.read()) {
+    left_door_.stepper.setMaxSpeed(config::kDoorHomingSpeed);
+    rotate_controller.rotateAsync(left_door_.stepper);
+    while (!left_door_.overrun_pin.read())
+      ;
+    rotate_controller.stop();
+  }
+
+  // motor is now is now in the closed position
+  left_door_.max_travel = left_door_.stepper.getPosition();
+
+  left_door_.stepper.setMaxSpeed(config::kDoorMaxLiveSpeed);
+  left_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
+}
+
+void DoorController::openRight() {
+  right_door_.stepper.setMaxSpeed(-config::kDoorMaxLiveSpeed);
+
+  right_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
+
+  right_door_.stepper.setTargetAbs(right_door_.max_travel);
+
+  if (right_door_.home_pin.read() == 1) {
+    step_controller.moveAsync(right_door_.stepper);
+  }
+}
+void DoorController::closeRight() {
+  right_door_.stepper.setMaxSpeed(config::kDoorMaxLiveSpeed);
+
+  right_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
+
+  right_door_.stepper.setTargetAbs(right_door_.max_travel);
+
+  if (right_door_.overrun_pin.read() == 1) {
+    step_controller.moveAsync(right_door_.stepper);
+  }
+}
+void DoorController::homeRight() {
+  right_door_.stepper.setAcceleration(config::kDoorHomingAccel);
+
+  // open first
+  if (!right_door_.home_pin.read()) {
+    right_door_.stepper.setMaxSpeed(-config::kDoorHomingSpeed);
+    rotate_controller.rotateAsync(right_door_.stepper);
+    while (!right_door_.home_pin.read())
+      ;
+    rotate_controller.stop();
+  }
+
+  // reset the open position to 0
+  right_door_.stepper.setPosition(0);
+  right_door_.stepper.setMaxSpeed(config::kDoorHomingSpeed);
+
+  if (!right_door_.overrun_pin.read()) {
+    right_door_.stepper.setMaxSpeed(config::kDoorHomingSpeed);
+    rotate_controller.rotateAsync(right_door_.stepper);
+    while (!right_door_.overrun_pin.read())
+      ;
+    rotate_controller.stop();
+  }
+
+  // motor is now is now in the closed position
+  right_door_.max_travel = right_door_.stepper.getPosition();
+
+  right_door_.stepper.setMaxSpeed(config::kDoorMaxLiveSpeed);
+  right_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
 }
