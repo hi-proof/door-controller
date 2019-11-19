@@ -30,10 +30,11 @@ class CallPanel final {
   using ButtonHoldCallback = void (*)(int);
 
   CallPanel();
-  ~CallPanel();
+  ~CallPanel() {}
 
-  void setButtonCallback(ButtonNames button, ButtonPressCallback on_press,
-                         ButtonHoldCallback on_hold) {
+  void setButtonCallback(ButtonNames button,
+                         ButtonPressCallback on_press = nullptr,
+                         ButtonHoldCallback on_hold = nullptr) {
     press_callbacks_[button] = on_press;
     hold_callbacks[button] = on_hold;
     button_map_[button].update(on_press, on_hold);
@@ -45,7 +46,7 @@ class CallPanel final {
   void update() {
     for (int i = 0; i < MAX_BUTTONS; ++i) {
       button_map_[i].update(press_callbacks_[i], hold_callbacks[i]);
-      }
+    }
   }
 
  private:

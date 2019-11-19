@@ -4,12 +4,14 @@
 #include "parallelio.h"
 
 #include "floor_controller.h"
+#include "call_panel.h"
 
 //Stepper s1(34, 33);
 StepControl controller(25);
 RotateControl rc(25);
 
 hiproof::elevator::FloorController fc{34, 33, 35, 36};
+hiproof::elevator::CallPanel call_panel{};
 
 int32_t closed_position;
 
@@ -147,7 +149,7 @@ int32_t motor_accel = 500;
 Bounce button_start = Bounce();
 Bounce button_stop = Bounce();
 
-Door d1(34, 33, 35, 36);
+// Door d1(34, 33, 35, 36);
 Door d2(38, 37, 32, 39);
 
 
@@ -223,11 +225,11 @@ void setup() {
 //  shell_register(command_close, PSTR("close"));
 //  shell_register(command_move, PSTR("move"));
 
-  shell_register(command_go, PSTR("g"));
-  shell_register(command_back, PSTR("b"));
-  shell_register(command_halt, PSTR("h"));
-  shell_register(command_estop, PSTR("e"));
-  shell_register(command_motor, PSTR("m"));
+  // shell_register(command_go, PSTR("g"));
+  // shell_register(command_back, PSTR("b"));
+  // shell_register(command_halt, PSTR("h"));
+  // shell_register(command_estop, PSTR("e"));
+  // shell_register(command_motor, PSTR("m"));
   //  shell_register(command_motor, PSTR("m"));
 
   //
@@ -247,42 +249,42 @@ void setup() {
 }
 
 
-FancyButton b1(
-  ParallelBounce(buttons, 0),
-  ParallelOutputPin(button_leds, 3)
-);
+// FancyButton b1(
+//   ParallelBounce(buttons, 0),
+//   ParallelOutputPin(button_leds, 3)
+// );
 
-FancyButton b2(
-  ParallelBounce(buttons, 1),
-  ParallelOutputPin(button_leds, 2)
-);
+// FancyButton b2(
+//   ParallelBounce(buttons, 1),
+//   ParallelOutputPin(button_leds, 2)
+// );
 
-FancyButton b3(
-  ParallelBounce(buttons, 2),
-  ParallelOutputPin(button_leds, 1)
-);
+// FancyButton b3(
+//   ParallelBounce(buttons, 2),
+//   ParallelOutputPin(button_leds, 1)
+// );
 
-FancyButton b4(
-  ParallelBounce(buttons, 3),
-  ParallelOutputPin(button_leds, 0)
-);
+// FancyButton b4(
+//   ParallelBounce(buttons, 3),
+//   ParallelOutputPin(button_leds, 0)
+// );
 
-FancyButton b5(
-  ParallelBounce(buttons, 7),
-  ParallelOutputPin(button_leds, 4)
-);
+// FancyButton b5(
+//   ParallelBounce(buttons, 7),
+//   ParallelOutputPin(button_leds, 4)
+// );
 
-FancyButton b6(
-  ParallelBounce(buttons, 6),
-  ParallelOutputPin(button_leds, 5)
-);
+// FancyButton b6(
+//   ParallelBounce(buttons, 6),
+//   ParallelOutputPin(button_leds, 5)
+// );
 
-FancyButton& button_star = b1;
-FancyButton& button_13f = b2;
-FancyButton& button_14f = b3;
-FancyButton& button_bell = b4;
-FancyButton& button_close = b5;
-FancyButton& button_open = b6;
+// FancyButton& button_star = b1;
+// FancyButton& button_13f = b2;
+// FancyButton& button_14f = b3;
+// FancyButton& button_bell = b4;
+// FancyButton& button_close = b5;
+// FancyButton& button_open = b6;
 
 void on_press() {
   Serial.printf("Pressed\r\n");
@@ -303,6 +305,81 @@ void maint_start()
   controller.stop();
 }
 
+void EnterMaintenanceMode() {
+  fc.enterMaintenanceMode();
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Open,
+                               []() -> void {
+                                 sseg.values[0] = SEG_G;
+                                 sseg.values[1] = SEG_G | SEG_B | SEG_C;
+                                 fc.rotate(true);
+                               });
+
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Close,
+                               []() -> void {
+                                 sseg.values[0] = SEG_G | SEG_F | SEG_E;
+                                 sseg.values[1] = SEG_G;
+                                 fc.rotate(false);
+                               });
+
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Floor12, nullptr,
+                               [](int t) -> void { fc.setStop(0); });
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Floor13, nullptr,
+                               [](int t) -> void { fc.setStop(1); });
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Floor14, nullptr,
+                               [](int t) -> void { fc.setStop(2); });
+
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Bell,
+                               []() -> void {
+                                 sseg.values[0] = SEG_G;
+                                 sseg.values[1] = SEG_G;
+                                 fc.stopRotation();
+                               },
+                               [](int t) -> void {
+                                 fc.emergencyStop();
+                                 fc.exitMaintenanceMode();
+                               });
+}
+
+void ExitMaintenanceMode() { 
+  fc.exitMaintenanceMode();
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Open,
+                               []() -> void {
+                                 sseg.values[0] = SEG_G;
+                                 sseg.values[1] = SEG_G | SEG_B | SEG_C;
+                                 fc.rotate(true);
+                               });
+
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Close,
+                               []() -> void {
+                                 sseg.values[0] = SEG_G | SEG_F | SEG_E;
+                                 sseg.values[1] = SEG_G;
+                                 fc.rotate(false);
+                               });
+
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Floor12,
+                               []() -> void {
+                                 sseg.values[0] = SSeg::digit(1);
+                                 sseg.values[1] = SSeg::digit(2);
+                                 fc.moveToStop(0);
+                               });
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Floor13,
+                               []() -> void {
+                                 sseg.values[0] = SSeg::digit(1);
+                                 sseg.values[1] = SSeg::digit(3);
+                                 fc.moveToStop(1);
+                               });
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Floor14,
+                               []() -> void {
+                                 sseg.values[0] = SSeg::digit(1);
+                                 sseg.values[1] = SSeg::digit(4);
+                                 fc.moveToStop(2);
+                               });
+
+  call_panel.setButtonCallback(hiproof::elevator::CallPanel::Bell,
+                               []() -> void { fc.emergencyStop(); },
+                               [](int t) -> void { fc.enterMaintenanceMode(); });
+}
+
 void maint_stop() 
 {
   maintenance_mode = false;
@@ -313,90 +390,33 @@ void loop() {
   buttons.update();
 
   if (fc.inMaintenanceMode()) {
-    button_bell.on = (millis() / 500) % 2 == 0;
-    button_open.on = true;
-    button_close.on = true;
+    // button_bell.on = (millis() / 500) % 2 == 0;
+    // button_open.on = true;
+    // button_close.on = true;
 
     sseg.values[0] = SEG_G;
     sseg.values[1] = SEG_G;
 
-    button_open.update([]() -> void {
-      sseg.values[0] = SEG_G;
-      sseg.values[1] = SEG_G | SEG_B | SEG_C;
-      fc.rotate(true);
-    });
-
-    button_close.update([]() -> void {
-      sseg.values[0] = SEG_G | SEG_F | SEG_E;
-      sseg.values[1] = SEG_G;
-      fc.rotate(false);
-    });
-
-    button_13f.update(NULL, []() -> void { fc.setStop(1); });
-
-    button_14f.update(NULL, []() -> void { fc.setStop(2); });
-
-    button_star.update(NULL, []() -> void { fc.setStop(3); });
-
-    button_bell.update(
-        []() -> void {
-          sseg.values[0] = SEG_G;
-          sseg.values[1] = SEG_G;
-          fc.stopRotation();
-        },
-        []() -> void {
-          fc.emergencyStop();
-          fc.exitMaintenanceMode();
-        });
-
-    if (button_bell.on) {
-      sseg.values[0] |= SEG_DP;
-    } else {
-      sseg.values[0] &= ~SEG_DP;
-    }
+    // if (button_bell.on) {
+    //   sseg.values[0] |= SEG_DP;
+    // } else {
+    //   sseg.values[0] &= ~SEG_DP;
+    // }
 
     
   } else {
-    button_bell.on = false;
-    button_open.on = false;
-    button_close.on = false;    
+    // button_bell.on = false;
+    // button_open.on = false;
+    // button_close.on = false;
 
     sseg.values[0] &= ~SEG_DP;
 
-    button_13f.update([]() -> void {
-      sseg.values[0] = SSeg::digit(1);
-      sseg.values[1] = SSeg::digit(3);
-      fc.moveToStop(1);
-    });
-
-    button_14f.update([]() -> void {
-      sseg.values[0] = SSeg::digit(1);
-      sseg.values[1] = SSeg::digit(4);
-      fc.moveToStop(2);
-    });
-
-    button_star.update(
-      []() -> void { 
-        sseg.values[0] = SSeg::digit(1);
-        sseg.values[1] = SSeg::digit(2);
-        fc.moveToStop(3); 
-      }
-    );
-
-    button_bell.update([]() -> void { fc.emergencyStop(); },
-                       []() -> void { fc.enterMaintenanceMode(); });
   }
-
-  b1.update();
-  b2.update();
-  b3.update();
-  b4.update();
-  b5.update();
-  b6.update();
   
   button_leds.update();
   sseg.update();
   fc.update();
+  call_panel.update();
 
   //Serial.println(buttons.values, BIN);
   //  Serial.printf("SW1: %d   SW2: %d\r\n", digitalRead(PIN_SW1), digitalRead(PIN_SW2));
@@ -435,112 +455,112 @@ void loop() {
 //-------------------------------------------------------------------------------------------
 // CLI
 
-int command_home(int argc, char** argv)
-{
-  shell_printf("Starting D1 homing cycle\r\n");
-  d1.homing_cycle();
-  shell_printf("D1 closed position: %d\r\n", d1.pos_closed);
+// int command_home(int argc, char** argv)
+// {
+//   shell_printf("Starting D1 homing cycle\r\n");
+//   d1.homing_cycle();
+//   shell_printf("D1 closed position: %d\r\n", d1.pos_closed);
 
-  shell_printf("Starting D2 homing cycle\r\n");
-  d2.homing_cycle();
-  shell_printf("D1 closed position: %d\r\n", d2.pos_closed);
+//   shell_printf("Starting D2 homing cycle\r\n");
+//   d2.homing_cycle();
+//   shell_printf("D1 closed position: %d\r\n", d2.pos_closed);
 
-  return SHELL_RET_SUCCESS;
-}
+//   return SHELL_RET_SUCCESS;
+// }
 
-int command_info(int argc, char ** argv)
-{
-  shell_printf("D1 SW1: %d   SW2: %d   Pos: %d\r\n", digitalRead(d1.pin_sw1), digitalRead(d1.pin_sw2), d1.s.getPosition());
-  shell_printf("D2 SW1: %d   SW2: %d   Pos: %d\r\n", digitalRead(d2.pin_sw1), digitalRead(d2.pin_sw2), d2.s.getPosition());
-  return SHELL_RET_SUCCESS;
-}
+// int command_info(int argc, char ** argv)
+// {
+//   shell_printf("D1 SW1: %d   SW2: %d   Pos: %d\r\n", digitalRead(d1.pin_sw1), digitalRead(d1.pin_sw2), d1.s.getPosition());
+//   shell_printf("D2 SW1: %d   SW2: %d   Pos: %d\r\n", digitalRead(d2.pin_sw1), digitalRead(d2.pin_sw2), d2.s.getPosition());
+//   return SHELL_RET_SUCCESS;
+// }
 
-int command_open(int argc, char ** argv)
-{
-  d1.s.setTargetAbs(0);
-  d2.s.setTargetAbs(0);
-  controller.move(d1.s, d2.s);
-  return SHELL_RET_SUCCESS;
-}
+// int command_open(int argc, char ** argv)
+// {
+//   d1.s.setTargetAbs(0);
+//   d2.s.setTargetAbs(0);
+//   controller.move(d1.s, d2.s);
+//   return SHELL_RET_SUCCESS;
+// }
 
-int command_close(int argc, char ** argv)
-{
-  d1.s.setTargetAbs(d1.pos_closed);
-  d2.s.setTargetAbs(d2.pos_closed);
-  controller.move(d1.s, d2.s);
-  return SHELL_RET_SUCCESS;
-}
+// int command_close(int argc, char ** argv)
+// {
+//   d1.s.setTargetAbs(d1.pos_closed);
+//   d2.s.setTargetAbs(d2.pos_closed);
+//   controller.move(d1.s, d2.s);
+//   return SHELL_RET_SUCCESS;
+// }
 
-int command_move(int argc, char ** argv) {
-  if (argc >= 2) {
-    int new_pos = atoi(argv[1]);
-    d1.s.setTargetRel(new_pos);
-    controller.move(d1.s);
-  }
-}
+// int command_move(int argc, char ** argv) {
+//   if (argc >= 2) {
+//     int new_pos = atoi(argv[1]);
+//     d1.s.setTargetRel(new_pos);
+//     controller.move(d1.s);
+//   }
+// }
 
-int command_go(int argc, char ** argv)
-{
-   d1.s.setMaxSpeed(motor_speed);
-   d1.s.setAcceleration(motor_accel);
-   rc.rotateAsync(d1.s);
-   return SHELL_RET_SUCCESS;
-}
+// int command_go(int argc, char ** argv)
+// {
+//    d1.s.setMaxSpeed(motor_speed);
+//    d1.s.setAcceleration(motor_accel);
+//    rc.rotateAsync(d1.s);
+//    return SHELL_RET_SUCCESS;
+// }
 
-int command_back(int argc, char ** argv)
-{
-  d1.s.setMaxSpeed(-motor_speed);
-  d1.s.setAcceleration(motor_accel);
-   rc.rotateAsync(d1.s);
-   return SHELL_RET_SUCCESS;
-}
+// int command_back(int argc, char ** argv)
+// {
+//   d1.s.setMaxSpeed(-motor_speed);
+//   d1.s.setAcceleration(motor_accel);
+//    rc.rotateAsync(d1.s);
+//    return SHELL_RET_SUCCESS;
+// }
 
-int command_halt(int argc, char ** argv)
-{
-   rc.stopAsync();
-   return SHELL_RET_SUCCESS;
-}
+// int command_halt(int argc, char ** argv)
+// {
+//    rc.stopAsync();
+//    return SHELL_RET_SUCCESS;
+// }
 
-int command_estop(int argc, char ** argv)
-{
-   rc.emergencyStop();
-   return SHELL_RET_SUCCESS;
-}
+// int command_estop(int argc, char ** argv)
+// {
+//    rc.emergencyStop();
+//    return SHELL_RET_SUCCESS;
+// }
 
 
-int command_motor(int argc, char** argv)
-{
-  if (argc == 1) {
-    shell_printf("Max speed:  %d\r\n", motor_speed);
-    shell_printf("Max accel:  %d\r\n", motor_accel);
-    shell_printf("Position:   %d\r\n", d1.s.getPosition());
-  }
-  if (argc >= 2) {
-    if (0 == strcmp(argv[1], "speed")) {
-      if (argc >= 3) {
-        motor_speed = atoi(argv[2]);
-      }
-      shell_printf("Max speed:  %d\r\n", motor_speed);
-    }
-    if (0 == strcmp(argv[1], "accel")) {
-      if (argc >= 3) {
-        motor_accel = atoi(argv[2]);        
-      }
-      shell_printf("Max accel:  %d\r\n", motor_accel);
-    }
-//    if (0 == strcmp(argv[1], "start")) {
-//      rc.rotateAsync(s1);
-//    }
-//    if (0 == strcmp(argv[1], "stop")) {
-//      rc.stopAsync();
-//    }
-//    if (0 == strcmp(argv[1], "e")) {
-//      rc.emergencyStop();
-//    }
-//
-  }
-  return SHELL_RET_SUCCESS;
-}
+// int command_motor(int argc, char** argv)
+// {
+//   if (argc == 1) {
+//     shell_printf("Max speed:  %d\r\n", motor_speed);
+//     shell_printf("Max accel:  %d\r\n", motor_accel);
+//     shell_printf("Position:   %d\r\n", d1.s.getPosition());
+//   }
+//   if (argc >= 2) {
+//     if (0 == strcmp(argv[1], "speed")) {
+//       if (argc >= 3) {
+//         motor_speed = atoi(argv[2]);
+//       }
+//       shell_printf("Max speed:  %d\r\n", motor_speed);
+//     }
+//     if (0 == strcmp(argv[1], "accel")) {
+//       if (argc >= 3) {
+//         motor_accel = atoi(argv[2]);        
+//       }
+//       shell_printf("Max accel:  %d\r\n", motor_accel);
+//     }
+// //    if (0 == strcmp(argv[1], "start")) {
+// //      rc.rotateAsync(s1);
+// //    }
+// //    if (0 == strcmp(argv[1], "stop")) {
+// //      rc.stopAsync();
+// //    }
+// //    if (0 == strcmp(argv[1], "e")) {
+// //      rc.emergencyStop();
+// //    }
+// //
+//   }
+//   return SHELL_RET_SUCCESS;
+// }
 
 int shell_reader(char * data)
 {
