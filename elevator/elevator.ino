@@ -6,6 +6,18 @@
 #include "floor_controller.h"
 #include "call_panel.h"
 
+namespace {
+  // Device states
+
+  enum class DeviceStates : uint8_t {
+    Normal,
+    FloorProgramming,
+    DoorProgramming,
+  };
+  DeviceStates current_state{DeviceStates::Normal};
+
+} // anonymous namespace
+
 //Stepper s1(34, 33);
 StepControl controller(25);
 RotateControl rc(25);
@@ -306,7 +318,8 @@ void maint_start()
 }
 
 void EnterMaintenanceMode() {
-  fc.enterMaintenanceMode();
+  fc.emergencyStop();
+  current_state = DeviceStates::FloorProgramming;
   call_panel.setButtonCallback(hiproof::elevator::CallPanel::Open,
                                []() -> void {
                                  sseg.values[0] = SEG_G;
@@ -336,12 +349,13 @@ void EnterMaintenanceMode() {
                                },
                                [](int t) -> void {
                                  fc.emergencyStop();
-                                 fc.exitMaintenanceMode();
+                                 ExitMaintenanceMode();
                                });
 }
 
 void ExitMaintenanceMode() { 
-  fc.exitMaintenanceMode();
+  fc.emergencyStop();
+  current_state = DeviceStates::Normal;
   call_panel.setButtonCallback(hiproof::elevator::CallPanel::Open,
                                []() -> void {
                                  sseg.values[0] = SEG_G;
@@ -377,7 +391,7 @@ void ExitMaintenanceMode() {
 
   call_panel.setButtonCallback(hiproof::elevator::CallPanel::Bell,
                                []() -> void { fc.emergencyStop(); },
-                               [](int t) -> void { fc.enterMaintenanceMode(); });
+                               [](int t) -> void { EnterMaintenanceMode(); });
 }
 
 void maint_stop() 
@@ -389,7 +403,7 @@ void maint_stop()
 void loop() {
   buttons.update();
 
-  if (fc.inMaintenanceMode()) {
+  if (current_state == DeviceStates::FloorProgramming) {
     // button_bell.on = (millis() / 500) % 2 == 0;
     // button_open.on = true;
     // button_close.on = true;

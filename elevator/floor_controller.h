@@ -26,13 +26,10 @@ class FloorController final : SafetyCriticalComponent {
   void update();
 
   // API for "maintenance mode" tasks
-  void enterMaintenanceMode();
   void setStop(uint8_t stop_number);
   void rotate(bool clockwise);
   void stopRotation();
-  void rotateWithStep(uint16_t steps, bool clockwise);
-  bool inMaintenanceMode() { return in_maintenence_mode_; }
-  void exitMaintenanceMode();
+  // void rotateWithStep(uint16_t steps, bool clockwise);
 
   void enterSafeMode();
   void emergencyStop();
@@ -44,9 +41,6 @@ class FloorController final : SafetyCriticalComponent {
   static constexpr uint16_t kMaxLiveAccel = 500;
   static constexpr uint16_t kDebounceInterval = 25;
 
-  bool in_maintenence_mode_{false};
-  enum class MovementState { Stopped, Home, Stepping, Rotating, Overrun, Unknown };
-  MovementState activity_state_{MovementState::Stopped};
   uint32_t named_stops_[kNumNamedStops];
   Stepper stepper_;
   Bounce home_pin_ ;

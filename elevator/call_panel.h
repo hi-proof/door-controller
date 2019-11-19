@@ -23,7 +23,7 @@ class CallPanel final {
     Bell,
     Close,
     Open,
-    MAX_BUTTONS,
+    _MAX_BUTTONS,
   };
 
   using ButtonPressCallback = void (*)(void);
@@ -44,15 +44,15 @@ class CallPanel final {
   }
 
   void update() {
-    for (int i = 0; i < MAX_BUTTONS; ++i) {
+    for (int i = 0; i < _MAX_BUTTONS; ++i) {
       button_map_[i].update(press_callbacks_[i], hold_callbacks[i]);
     }
   }
 
  private:
-  FancyButton button_map_[MAX_BUTTONS];
-  ButtonPressCallback press_callbacks_[MAX_BUTTONS];
-  ButtonHoldCallback hold_callbacks[MAX_BUTTONS];
+  FancyButton button_map_[_MAX_BUTTONS];
+  ButtonPressCallback press_callbacks_[_MAX_BUTTONS];
+  ButtonHoldCallback hold_callbacks[_MAX_BUTTONS];
 };
 
 }  // namespace elevator
