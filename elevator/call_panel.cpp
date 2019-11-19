@@ -37,21 +37,23 @@ void CallPanel::setButtonLED(ButtonNames button, bool value) {
 }
 
 void CallPanel::update() {
+  default_buttons.update();
   for (int i = 0; i < _MAX_BUTTONS; ++i) {
     button_map_[i].update(press_callbacks_[i], hold_callbacks_[i]);
   }
   // button_map_.update();
   seven_seg_.update();
+  default_button_leds.update();
 }
 
 void CallPanel::setSevenSegment(uint8_t value) {
   seven_seg_.values[0] = SSeg::digit(value / 10);
-  seven_seg_.values[0] = SSeg::digit(value % 10);
+  seven_seg_.values[1] = SSeg::digit(value % 10);
   seven_seg_.update();
 }
 
 void CallPanel::setSevenSegment(char lchar, char rchar) {
   seven_seg_.values[0] = SSeg::character(lchar);
-  seven_seg_.values[0] = SSeg::character(rchar);
+  seven_seg_.values[1] = SSeg::character(rchar);
   seven_seg_.update();
 }

@@ -204,6 +204,7 @@ class ParallelBounce : public Bounce {
   ParallelBounce& operator=(ParallelBounce&& pb) {
     pi = pb.pi;
     attach(pb.pin);
+    return *this;
   }
 
   virtual bool readCurrentState() { return this->pi.read(this->pin); }
@@ -235,13 +236,14 @@ class ParallelOutputPin : public OutputPin {
  public:
   ParallelOutputPin() = default;
   ParallelOutputPin(ParallelOutputs& po, uint8_t pin)
-      : po(po), OutputPin(pin) {}
+      : OutputPin(pin), po(po) {}
   ParallelOutputPin(const ParallelOutputPin& pop)
-      : po(pop.po), OutputPin(pop.pin) {}
+      : OutputPin(pop.pin), po(pop.po) {}
 
   ParallelOutputPin& operator=(ParallelOutputPin&& pop) {
     pin = pop.pin;
     po = pop.po;
+    return *this;
   }
 
   virtual void setPinMode(int pin, int mode) {
@@ -272,15 +274,16 @@ class FancyButton {
   }
   FancyButton(FancyButton& fb) : input(fb.input), out(fb.out) {}
 
-  FancyButton& operator=(FancyButton&& fb) {
+  FancyButton& operator=(const FancyButton& fb) {
     input = ParallelBounce(fb.input);
     out = ParallelOutputPin(fb.out);
     held_called = fb.held_called;
     on = fb.on;
     on_on_press = fb.on_on_press;
+    return *this;
   }
 
-  void update(void (*pressed)() = NULL, void (*held)() = NULL) {
+  void update(void (*pressed)() = NULL, void (*held)(int) = NULL) {
     input.update();
     if (input.rose() && !held_called && pressed) {
       pressed();
@@ -288,7 +291,7 @@ class FancyButton {
     if (input.read() == LOW && !held_called && input.duration() >= 1000) {
       held_called = true;
       if (held) {
-        held();
+        held(input.duration());
       }
     }
     if (input.rose()) {
