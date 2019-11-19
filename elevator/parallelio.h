@@ -117,14 +117,32 @@ class SSeg {
     }
 };
 
+namespace {
+
+constexpr int SW_DATA{26};
+constexpr int SW_CLOCK{27};
+constexpr int SW_LATCH{25};
+ParallelInputs default_buttons(SW_DATA, SW_CLOCK, SW_LATCH);
+
+constexpr int SSEG_DATA{5};
+constexpr int SSEG_CLOCK{6};
+constexpr int SSEG_LATCH{7};
+SSeg default_sseg(SSEG_DATA, SSEG_CLOCK, SSEG_LATCH);
+
+constexpr int BL_DATA{24};
+constexpr int BL_CLOCK{12};
+constexpr int BL_LATCH{4};
+ParallelOutputs default_button_leds(BL_DATA, BL_CLOCK, BL_LATCH);
+
+};  // anonymous namespace
 
 class ParallelBounce : public Bounce {
-    ParallelInputs& pi;
+    ParallelInputs& pi{default_buttons};
 
   public:
-    ParallelBounce(ParallelInputs& pi, uint8_t pin) : pi(pi)
-    {
-      this->attach(pin);
+   ParallelBounce() = default;
+   ParallelBounce(ParallelInputs& pi, uint8_t pin) : pi(pi) {
+     this->attach(pin);
     }
 
     virtual bool readCurrentState() {
@@ -140,7 +158,8 @@ class ParallelBounce : public Bounce {
 class OutputPin
 {
   public:
-    uint8_t pin;
+    uint8_t pin{0};
+    OutputPin() = default;
     OutputPin(uint8_t pin) {
       this->pin = pin;
       setPinMode(pin, OUTPUT);
@@ -159,17 +178,16 @@ class OutputPin
 };
 
 class ParallelOutputPin : public OutputPin {
-  ParallelOutputs& po;
+  ParallelOutputs& po{default_button_leds};
   
   public:
-    ParallelOutputPin(ParallelOutputs& po, uint8_t pin) : po(po), OutputPin(pin)
-    {
-    }
+   ParallelOutputPin() = default;
+   ParallelOutputPin(ParallelOutputs& po, uint8_t pin)
+       : po(po), OutputPin(pin) {}
 
-    virtual void setPinMode(int pin, int mode) 
-    {
-      // no-op
-      return;
+   virtual void setPinMode(int pin, int mode) {
+     // no-op
+     return;
     }
 
     virtual void write(int8_t value) {
@@ -185,12 +203,13 @@ class FancyButton
     ParallelBounce input;
     ParallelOutputPin out;
 
-    bool held_called;
-    bool on;
-    bool on_on_press;
-   
-    FancyButton(ParallelBounce input, ParallelOutputPin out) : input(input), out(out)
-    {
+    bool held_called{true};
+    bool on{true};
+    bool on_on_press{false};
+
+    FancyButton() = default;
+    FancyButton(ParallelBounce input, ParallelOutputPin out)
+        : input(input), out(out) {
       on_on_press = true;
       held_called = true;
       on = false;
