@@ -22,8 +22,8 @@ CallPanel::CallPanel() {
 }
 
 void CallPanel::setButtonCallback(ButtonNames button,
-                       ButtonPressCallback on_press = nullptr,
-                       ButtonHoldCallback on_hold = nullptr) {
+                       ButtonPressCallback on_press,
+                       ButtonHoldCallback on_hold) {
   press_callbacks_[button] = on_press;
   hold_callbacks_[button] = on_hold;
   button_map_[button].update(on_press, on_hold);
