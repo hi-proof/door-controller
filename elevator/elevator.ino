@@ -226,7 +226,7 @@ void setup() {
 
     // shell_register(command_go, PSTR("g"));
     // shell_register(command_back, PSTR("b"));
-    // shell_register(command_halt, PSTR("h"));
+    shell_register(command_halt, PSTR("h"));
     shell_register(command_estop, PSTR("e"));
     // shell_register(command_motor, PSTR("m"));
     //  shell_register(command_motor, PSTR("m"));
@@ -234,6 +234,26 @@ void setup() {
     shell_register([](int argc, char** argv) { return SHELL_RET_SUCCESS; },
                   PSTR("floor_home"));
   }
+  while (!Serial.available())
+    ;
+
+  // while (1) {
+  //   door_ctrl.left_door_.home_pin.update();
+  //   door_ctrl.left_door_.overrun_pin.update();
+  //   door_ctrl.right_door_.home_pin.update();
+  //   door_ctrl.right_door_.overrun_pin.update();
+  //   Serial.printf(
+  //       "LEFT_OPEN:    %d\r\n"
+  //       "LEFT_CLOSED:  %d\r\n"
+  //       "RIGHT_OPEN:   %d\r\n"
+  //       "RIGHT_CLOSED: %d\r\n",
+  //       door_ctrl.left_door_.home_pin.read(),
+  //       door_ctrl.left_door_.overrun_pin.read(),
+  //       door_ctrl.right_door_.home_pin.read(),
+  //       door_ctrl.right_door_.overrun_pin.read());
+  //   delay(2000);
+  // }
+
   EnterUncalibratedMode();
 }
 
@@ -374,10 +394,12 @@ void loop() {
 int command_home(int argc, char** argv) {
   shell_printf("Starting D1 homing cycle\r\n");
   door_ctrl.homeLeft();
+  door_ctrl.openLeft();
   // shell_printf("D1 closed position: %d\r\n", d1.pos_closed);
 
   shell_printf("Starting D2 homing cycle\r\n");
   door_ctrl.homeRight();
+  door_ctrl.openRight();
   // shell_printf("D1 closed position: %d\r\n", d2.pos_closed);
 
   return SHELL_RET_SUCCESS;

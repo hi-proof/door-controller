@@ -49,7 +49,7 @@ class DoorController final : SafetyCriticalComponent {
   void closeRight();
   void homeRight();
 
- private:
+//  private:
 
   using DoorData = struct {
     Stepper stepper;

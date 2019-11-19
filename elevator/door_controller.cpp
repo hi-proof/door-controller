@@ -94,8 +94,8 @@ void DoorController::close() {
   left_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
   right_door_.stepper.setAcceleration(config::kDoorMaxLiveAccel);
 
-  left_door_.stepper.setTargetAbs(left_door_.max_travel);
-  right_door_.stepper.setTargetAbs(right_door_.max_travel);
+  left_door_.stepper.setTargetAbs(left_door_.max_travel - 20);
+  right_door_.stepper.setTargetAbs(right_door_.max_travel - 20);
 
   if (left_door_.overrun_pin.read() == 1 &&
       right_door_.overrun_pin.read() == 1) {
@@ -164,8 +164,7 @@ void DoorController::homeLeft() {
   if (!left_door_.home_pin.read()) {
     left_door_.stepper.setMaxSpeed(-config::kDoorHomingSpeed);
     rotate_controller.rotateAsync(left_door_.stepper);
-    while (!left_door_.home_pin.read())
-      ;
+    while (!left_door_.home_pin.read()) left_door_.home_pin.update();
     rotate_controller.stop();
   }
 
@@ -176,8 +175,7 @@ void DoorController::homeLeft() {
   if (!left_door_.overrun_pin.read()) {
     left_door_.stepper.setMaxSpeed(config::kDoorHomingSpeed);
     rotate_controller.rotateAsync(left_door_.stepper);
-    while (!left_door_.overrun_pin.read())
-      ;
+    while (!left_door_.overrun_pin.read()) left_door_.overrun_pin.update();
     rotate_controller.stop();
   }
 
@@ -217,8 +215,7 @@ void DoorController::homeRight() {
   if (!right_door_.home_pin.read()) {
     right_door_.stepper.setMaxSpeed(-config::kDoorHomingSpeed);
     rotate_controller.rotateAsync(right_door_.stepper);
-    while (!right_door_.home_pin.read())
-      ;
+    while (!right_door_.home_pin.read()) right_door_.home_pin.update();
     rotate_controller.stop();
   }
 
@@ -229,8 +226,7 @@ void DoorController::homeRight() {
   if (!right_door_.overrun_pin.read()) {
     right_door_.stepper.setMaxSpeed(config::kDoorHomingSpeed);
     rotate_controller.rotateAsync(right_door_.stepper);
-    while (!right_door_.overrun_pin.read())
-      ;
+    while (!right_door_.overrun_pin.read()) right_door_.overrun_pin.update();
     rotate_controller.stop();
   }
 
