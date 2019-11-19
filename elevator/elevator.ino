@@ -227,6 +227,7 @@ void setup() {
   //  shell_register(command_motor, PSTR("m"));
 
   // command_home(0, NULL);
+  ExitMaintenanceMode();
 }
 
 void on_press() { Serial.printf("Pressed\r\n"); }
@@ -236,7 +237,7 @@ void on_hold() { Serial.printf("Held\r\n"); }
 using FloorNames = hiproof::elevator::CallPanel;
 
 void EnterMaintenanceMode() {
-  floor_ctrl.emergencyStop();
+  floor_ctrl.stopAsync();
   current_state = DeviceStates::FloorProgramming;
   call_panel.setButtonCallback(FloorNames::Open, []() -> void {
     call_panel.setSevenSegment('<', '>');
@@ -261,22 +262,20 @@ void EnterMaintenanceMode() {
                                  floor_ctrl.stopRotation();
                                },
                                [](int t) -> void {
-                                 floor_ctrl.emergencyStop();
+                                //  floor_ctrl.emergencyStop();
                                  ExitMaintenanceMode();
                                });
 }
 
 void ExitMaintenanceMode() {
-  floor_ctrl.emergencyStop();
+  floor_ctrl.stopAsync();
   current_state = DeviceStates::Normal;
   call_panel.setButtonCallback(FloorNames::Open, []() -> void {
     call_panel.setSevenSegment('<', '>');
-    floor_ctrl.rotate(true);
   });
 
   call_panel.setButtonCallback(FloorNames::Close, []() -> void {
     call_panel.setSevenSegment('>', '<');
-    floor_ctrl.rotate(false);
   });
 
   call_panel.setButtonCallback(FloorNames::Floor12, []() -> void {
@@ -293,7 +292,7 @@ void ExitMaintenanceMode() {
   });
 
   call_panel.setButtonCallback(FloorNames::Bell,
-                               []() -> void { floor_ctrl.emergencyStop(); },
+                               []() -> void { /*floor_ctrl.emergencyStop();*/ },
                                [](int t) -> void { EnterMaintenanceMode(); });
 }
 

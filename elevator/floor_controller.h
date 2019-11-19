@@ -26,6 +26,7 @@ class FloorController final : SafetyCriticalComponent {
   void seekToHome();
   void moveToStop(uint8_t stop_number);
   void update();
+  void stopAsync();
 
   // API for "maintenance mode" tasks
   void setStop(uint8_t stop_number);
@@ -43,9 +44,16 @@ class FloorController final : SafetyCriticalComponent {
   Bounce overrun_pin_;
   uint16_t run_speed{config::kFloorMaxLiveSpeed};
   uint16_t run_accel{config::kFloorMaxLiveAccel};
+  bool sc_active{false};
+  bool rc_active{false};
 
   static StepControl step_controller;
   static RotateControl rotate_controller;
+
+  void startStepController();
+  void stopStepController();
+  void startRotateController();
+  void stopRotateController();
 };
 
 }  // namespace elevator
