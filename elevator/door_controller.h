@@ -25,6 +25,8 @@ class DoorController final : SafetyCriticalComponent {
                  const int d1_home_pin, const int d1_overrun_pin,
                  const int d2_step_pin, const int d2_dir_pin,
                  const int d2_home_pin, const int d2_overrun_pin);
+  DoorController(config::EthernetConnectorPins left,
+                 config::EthernetConnectorPins right);
   ~DoorController(){};
   void enterSafeMode();
   void emergencyStop();
@@ -34,11 +36,6 @@ class DoorController final : SafetyCriticalComponent {
   void update();
 
  private:
-  static constexpr uint16_t kHomingSpeed = 1000;
-  static constexpr uint16_t kHomingAccel = 1000;
-  static constexpr uint16_t kMaxLiveSpeed = 1500;
-  static constexpr uint16_t kMaxLiveAccel = 500;
-  static constexpr uint16_t kDebounceInterval = 25;
 
   using DoorData = struct {
     Stepper stepper;
@@ -48,12 +45,12 @@ class DoorController final : SafetyCriticalComponent {
 
   DoorData left_door_;
   DoorData right_door_;
-  uint16_t run_speed{kMaxLiveSpeed};
-  uint16_t run_accel{kMaxLiveAccel};
+  uint16_t run_speed{config::kDoorMaxLiveSpeed};
+  uint16_t run_accel{config::kDoorMaxLiveAccel};
 
   static StepControl step_controller;
   static RotateControl rotate_controller;
-};  // namespace elevator
+};
 
 }  // namespace elevator
 }  // namespace hiproof

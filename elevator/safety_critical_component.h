@@ -1,5 +1,8 @@
 /** Define an interface for some basic safety sensitive devices
  * 
+ * This isn't intended to be anything more than enforcing that controllers
+ * with steppers can be stopped in the same way.
+ * 
  */
 
 #pragma once

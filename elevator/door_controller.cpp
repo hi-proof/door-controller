@@ -29,6 +29,24 @@ DoorController::DoorController(const int d1_step_pin, const int d1_dir_pin,
   right_door_.overrun_pin.interval(config::kPinDebounceInterval);
 }
 
+DoorController::DoorController(config::EthernetConnectorPins left,
+               config::EthernetConnectorPins right)
+    : left_door_{.stepper = Stepper(left.step_pin, left.dir_pin),
+                 .home_pin = Bounce(),
+                 .overrun_pin = Bounce()},
+      right_door_{.stepper = Stepper(right.step_pin, right.dir_pin),
+                  .home_pin = Bounce(),
+                  .overrun_pin = Bounce()} {
+  left_door_.home_pin.attach(left.home_pin, INPUT_PULLUP);
+  left_door_.home_pin.interval(config::kPinDebounceInterval);
+  left_door_.overrun_pin.attach(left.overrun_pin, INPUT_PULLUP);
+  left_door_.overrun_pin.interval(config::kPinDebounceInterval);
+  right_door_.home_pin.attach(right.home_pin, INPUT_PULLUP);
+  right_door_.home_pin.interval(config::kPinDebounceInterval);
+  right_door_.overrun_pin.attach(right.overrun_pin, INPUT_PULLUP);
+  right_door_.overrun_pin.interval(config::kPinDebounceInterval);
+}
+
 void DoorController::enterSafeMode() {
   rotate_controller.stop();
   step_controller.stop();

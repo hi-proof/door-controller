@@ -21,6 +21,7 @@ class FloorController final : SafetyCriticalComponent {
   static constexpr uint8_t kNumNamedStops = 4;
 
   FloorController(const int step_pin, const int dir_pin, const int home_pin, const int overrun_pin);
+  FloorController(config::EthernetConnectorPins conn);
   ~FloorController();
   void seekToHome();
   void moveToStop(uint8_t stop_number);
@@ -36,25 +37,19 @@ class FloorController final : SafetyCriticalComponent {
   void emergencyStop();
 
  private:
-  static constexpr uint16_t kHomingSpeed = 1000;
-  static constexpr uint16_t kHomingAccel = 1000;
-  static constexpr uint16_t kMaxLiveSpeed = 1500;
-  static constexpr uint16_t kMaxLiveAccel = 500;
-  static constexpr uint16_t kDebounceInterval = 25;
-
   uint32_t named_stops_[kNumNamedStops];
   Stepper stepper_;
   Bounce home_pin_ ;
   Bounce overrun_pin_;
-  uint16_t run_speed{kMaxLiveSpeed};
-  uint16_t run_accel{kMaxLiveAccel};
+  uint16_t run_speed{config::kFloorMaxLiveSpeed};
+  uint16_t run_accel{config::kFloorMaxLiveAccel};
 
   static StepControl step_controller;
   static RotateControl rotate_controller;
 };
 
-}  // elevator
+}  // namespace elevator
 
-}  // hiproof
+}  // namespace hiproof
 
 #endif  // HI_PROOF_FLOOR_CONTROLLER_H_

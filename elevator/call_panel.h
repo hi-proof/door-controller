@@ -35,39 +35,20 @@ class CallPanel final {
 
   void setButtonCallback(ButtonNames button,
                          ButtonPressCallback on_press = nullptr,
-                         ButtonHoldCallback on_hold = nullptr) {
-    press_callbacks_[button] = on_press;
-    hold_callbacks[button] = on_hold;
-    button_map_[button].update(on_press, on_hold);
-  }
-  void setButton(ButtonNames button, FancyButton new_button) {
-    button_map_[button] = FancyButton(new_button);
-  }
+                         ButtonHoldCallback on_hold = nullptr);
+  void setButton(ButtonNames button, FancyButton new_button);
+  void setButtonLED(ButtonNames button, bool value);
 
-  void update() {
-    for (int i = 0; i < _MAX_BUTTONS; ++i) {
-      button_map_[i].update(press_callbacks_[i], hold_callbacks[i]);
-    }
-    seven_seg.update();
-  }
+  void update();
 
-  void setSevenSegment(uint8_t value) {
-    seven_seg.values[0] = SSeg::digit(value / 10);
-    seven_seg.values[0] = SSeg::digit(value % 10);
-    seven_seg.update();
-  }
-
-  void setSevenSegment(char lchar, char rchar) {
-    seven_seg.values[0] = SSeg::character(lchar);
-    seven_seg.values[0] = SSeg::character(rchar);
-    seven_seg.update();
-  }
+  void setSevenSegment(uint8_t value);
+  void setSevenSegment(char lchar, char rchar);
 
  private:
   FancyButton button_map_[_MAX_BUTTONS];
   ButtonPressCallback press_callbacks_[_MAX_BUTTONS];
-  ButtonHoldCallback hold_callbacks[_MAX_BUTTONS];
-  SSeg seven_seg;
+  ButtonHoldCallback hold_callbacks_[_MAX_BUTTONS];
+  SSeg seven_seg_{default_sseg};
 };
 
 }  // namespace elevator

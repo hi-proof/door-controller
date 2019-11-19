@@ -20,6 +20,13 @@ FloorController::FloorController(const int step_pin, const int dir_pin,
   overrun_pin_.attach(overrun_pin, INPUT_PULLUP);
   overrun_pin_.interval(config::kPinDebounceInterval);
 }
+FloorController::FloorController(config::EthernetConnectorPins conn)
+    : named_stops_{}, stepper_{conn.step_pin, conn.dir_pin}, home_pin_{}, overrun_pin_{} {
+  home_pin_.attach(conn.home_pin, INPUT_PULLUP);
+  home_pin_.interval(config::kPinDebounceInterval);
+  overrun_pin_.attach(conn.overrun_pin, INPUT_PULLUP);
+  overrun_pin_.interval(config::kPinDebounceInterval);
+}
 
 FloorController::~FloorController() {}
 
