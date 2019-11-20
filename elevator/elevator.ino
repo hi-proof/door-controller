@@ -18,6 +18,7 @@ outer_state_t outer_state;
 
 bool is_outer;
 bool homing_done = false;
+bool homing_in_progress = false;
 
 //--------------------------------------------------------------------------
 
@@ -44,6 +45,8 @@ void tx_msg(uint8_t msg, uint8_t * buffer, uint8_t size) {
 
 void do_homing()
 {  
+  homing_in_progress = true;
+  
   d1.homing_cycle(rc);
   d1.s.setTargetAbs(0);
   doors_controller.moveAsync(d1.s);
@@ -51,11 +54,16 @@ void do_homing()
   d2.s.setTargetAbs(0);
   doors_controller.moveAsync(d2.s);
 
+  homing_in_progress = false;
   homing_done = true;
 }
 
 void do_open()
 {
+  if (!homing_done) {
+    return;
+  }
+  
   doors_controller.stop();
   d1.s.setTargetAbs(0);
   d2.s.setTargetAbs(0);
@@ -64,6 +72,10 @@ void do_open()
 
 void do_close()
 {
+  if (!homing_done) {
+    return;
+  }
+
   doors_controller.stop();
   d1.s.setTargetAbs(d1.pos_closed);
   d2.s.setTargetAbs(d2.pos_closed);
@@ -190,7 +202,11 @@ void setup() {
 
 void process_outer() 
 {
-
+  if (panel.b1.held && !homing_done) {
+    tx_msg(MSG_HOME, NULL, 0);
+    delay(100);
+    do_homing();
+  }
 }
 
 void send_button_events(FancyButton& b, uint8_t button_id) {
@@ -235,9 +251,15 @@ void loop() {
     process_inner();
   }
 
+  //UI
+  if (!homing_done) {
+    sseg.set((homing_in_progress) ? SSeg::character('H') | SEG_DP : SSeg::character('H'), 0);
+  } else {
+    sseg.set(SSeg::character('-'), SSeg::character('-'));
+  }
+
   // update outputs
   button_leds.update();
-  sseg.values[0] = SSeg::digit(3);
   sseg.update();
 
 //  // send state if enough time passed

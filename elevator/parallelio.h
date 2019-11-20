@@ -100,6 +100,11 @@ class SSeg {
       digitalWrite(this->pin_latch, HIGH);
     }
 
+    void set(uint8_t l, uint8_t r) {
+      this->values[0] = l;
+      this->values[1] = r;
+    }
+
     static uint8_t digit(uint8_t number) {
       switch (number) {
         case 0: return SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F;
@@ -149,6 +154,8 @@ class SSeg {
         return SEG_A | SEG_F | SEG_G | SEG_E;
       case 'L':
         return SEG_F | SEG_E | SEG_D;
+      case 'H':
+        return SEG_B | SEG_C | SEG_E | SEG_F | SEG_G;
       case '_':
         return SEG_D;
       case '-':
@@ -353,36 +360,3 @@ ParallelOutputs button_leds(BL_DATA, BL_CLOCK, BL_LATCH);
 SSeg sseg(SSEG_DATA, SSEG_CLOCK, SSEG_LATCH);
 
 IOPanel panel(buttons, button_leds, sseg);
-
-//FancyButton b1(
-//  ParallelBounce(buttons, 0), 
-//  ParallelOutputPin(button_leds, 3)
-//);
-//FancyButton b2(
-//  ParallelBounce(buttons, 1), 
-//  ParallelOutputPin(button_leds, 2)
-//);
-//FancyButton b3(
-//  ParallelBounce(buttons, 2), 
-//  ParallelOutputPin(button_leds, 1)
-//);
-//FancyButton b4(
-//  ParallelBounce(buttons, 3), 
-//  ParallelOutputPin(button_leds, 0)
-//);
-//FancyButton b5(
-//  ParallelBounce(buttons, 7), 
-//  ParallelOutputPin(button_leds, 4)
-//);
-//FancyButton b6(
-//  ParallelBounce(buttons, 6), 
-//  ParallelOutputPin(button_leds, 5)
-//);
-//
-//FancyButton& button_star = b1;
-//FancyButton& button_13f = b2;
-//FancyButton& button_14f = b3;
-//FancyButton& button_bell = b4;
-//FancyButton& button_close = b5;
-//FancyButton& button_open = b6;
-//FancyButton& button_call = b1;
