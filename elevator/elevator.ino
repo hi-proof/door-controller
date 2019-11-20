@@ -1,560 +1,269 @@
-#include "TeensyStep.h"
-#include "Shell.h"
-#include "Bounce2.h"
-#include "parallelio.h"
+#include <PacketSerial.h>
+#include <TeensyStep.h>
+#include <Shell.h>
+#include <Bounce2.h>
 
-//Stepper s1(34, 33);
-StepControl controller(25);
+#include "parallelio.h"
+#include "state.h"
+#include "controllers.h"
+
+//--------------------------------------------------------------------------
+
+PacketSerial b2b_comms;
+uint32_t last_tx;
+uint32_t last_rx;
+
+inner_state_t inner_state;
+outer_state_t outer_state;
+
+bool is_outer;
+bool homing_done = false;
+
+//--------------------------------------------------------------------------
+
+
+StepControl doors_controller(25);
+StepControl floor_controller(25);
+
+// used for homing only
 RotateControl rc(25);
 
-int32_t closed_position;
+Door d1(38, 37, 39, 32);
+Door d2(30, 31, 28, 29);
+Floor susan(34, 33, 35, 36);
 
-const uint32_t HOMING_SPEED = 1000;
-const uint32_t HOMING_ACCEL = 1000;
-const uint32_t DOOR_SPEED = 6000;
-const uint32_t DOOR_ACCEL = 1800;
+void tx_msg(uint8_t msg, uint8_t * buffer, uint8_t size) {
+  static uint8_t msg_buffer[255];
+  if (size > 254) {
+    size = 254;
+  }
+  msg_buffer[0] = msg;
+  memcpy(&msg_buffer[1], buffer, size);
+  b2b_comms.send(msg_buffer, size + 1);
+}
 
+void do_homing()
+{  
+  d1.homing_cycle(rc);
+  d1.s.setTargetAbs(0);
+  doors_controller.moveAsync(d1.s);
+  d2.homing_cycle(rc);
+  d2.s.setTargetAbs(0);
+  doors_controller.moveAsync(d2.s);
 
-class Door
+  homing_done = true;
+}
+
+void do_open()
 {
-  public:
+  doors_controller.stop();
+  d1.s.setTargetAbs(0);
+  d2.s.setTargetAbs(0);
+  doors_controller.moveAsync(d1.s, d2.s);
+}
 
-    uint8_t pin_dir, pin_pulse, pin_sw1, pin_sw2;
+void do_close()
+{
+  doors_controller.stop();
+  d1.s.setTargetAbs(d1.pos_closed);
+  d2.s.setTargetAbs(d2.pos_closed);
+  doors_controller.moveAsync(d1.s, d2.s);
+}
 
-    int motor_speed;
-    int motor_accel;
+void on_rx_button_event(event_button_t * evt)
+{
+  bool is_hold = evt->button & BTN_HOLD;
+  bool is_press = evt->button & BTN_HOLD;
 
-    int32_t pos_open;
-    int32_t pos_closed;
-
-    Stepper s;
-
-
-    Door(uint8_t pin_pulse, uint8_t pin_dir, uint8_t pin_sw1, uint8_t pin_sw2)
-      : s(pin_pulse, pin_dir)
-    {
-      this->pin_dir = pin_dir;
-      this->pin_pulse = pin_pulse;
-      this->pin_sw1 = pin_sw1;
-      this->pin_sw2 = pin_sw2;
-
-      this->motor_speed = 1500;
-      this->motor_accel = 500;
-
-      pinMode(this->pin_sw1, INPUT_PULLUP);
-      pinMode(this->pin_sw2, INPUT_PULLUP);
-    }
-
-    void homing_cycle() {
-      this->s.setAcceleration(1000);
-
-      // open first
-      if (!digitalRead(this->pin_sw1)) {
-        this->s.setMaxSpeed(-HOMING_SPEED);
-        rc.rotateAsync(this->s);
-        while (!digitalRead(this->pin_sw1));
-        rc.stop();
+  if (evt->button & BTN4) {
+    if (is_hold) {
+      if (!homing_done) {
+          tx_msg(MSG_HOME, NULL, 0);
+          delay(100);
+          do_homing();
       }
-
-      // reset the open position to 0
-      this->s.setPosition(0);
-      this->pos_closed = 18000;
-      this->s.setMaxSpeed(HOMING_SPEED);
-
-      if (!digitalRead(this->pin_sw2)) {
-        this->s.setMaxSpeed(HOMING_SPEED);
-        rc.rotateAsync(this->s);
-        while (!digitalRead(this->pin_sw2));
-        rc.stop();
-      }
-
-      // motor is now is now in the closed position
-      this->pos_closed = this->s.getPosition();
-
-      this->s.setMaxSpeed(DOOR_SPEED);
-      this->s.setAcceleration(DOOR_ACCEL);
     }
+  }
 
-    void homing_cycle_rotate() {
-      this->s.setAcceleration(HOMING_ACCEL);
-
-      // open door until both switches are triggered
-      if (!digitalRead(this->pin_sw1) && !digitalRead(this->pin_sw2)) {
-        this->s.setMaxSpeed(-HOMING_SPEED);
-        rc.rotateAsync(this->s);
-
-        // wait for the second switch to be triggered
-        while (true) {
-          while (!digitalRead(this->pin_sw1));
-          // if both switches are triggered we're at the base position
-          if (digitalRead(this->pin_sw2)) {
-             break;
-          }
-        }
-        rc.stop();
-      }
-
-      // we're back home - reset position
-      this->s.setPosition(0);
+  if (evt->button & BTN6) {
+    // open
+    if (homing_done) {
+      tx_msg(MSG_OPEN, NULL, 0);
+      delay(100);
+      do_open();
     }
+  }
 
-    void goto_position(int32_t pos) {
-      s.setMaxSpeed(motor_speed);
-      s.setAcceleration(motor_accel);
-      s.setTargetAbs(pos);
-      controller.moveAsync(s);
+  if (evt->button & BTN5) {
+    // close
+    if (homing_done) {
+      tx_msg(MSG_CLOSE, NULL, 0);
+      delay(100);
+      do_close();
     }
+  }
+}
 
-    void go()
-    {
-       rc.stop();
-       s.setMaxSpeed(HOMING_SPEED);
-       s.setAcceleration(HOMING_ACCEL);
-       rc.rotateAsync(s);
-    }
-
-    void back()
-    {
-       rc.stop();
-       s.setMaxSpeed(-HOMING_SPEED);
-       s.setAcceleration(HOMING_ACCEL);
-       rc.rotateAsync(s);
-    }
+void on_rx_outer(const uint8_t* buffer, size_t size)
+{
+  // we're totally connected now. yay
+  if (outer_state.system_mode == MODE_NOT_CONNECTED) {
+    outer_state.system_mode = MODE_ONLINE;
+  }
+  
+  switch (buffer[0]) {
+    case MSG_INNER_STATE:
+      memcpy(&inner_state, buffer[1], sizeof(inner_state));
+      break;
+      
+    case MSG_EVENT_BUTTON:
+      on_rx_button_event((event_button_t *)&buffer[1]);
+      shell_printf("Button event: %d\r\n", buffer[1]);
+      break;
     
-    void halt()
-    {
-       rc.stopAsync();
-    }
-    
-    void estop()
-    {
-       controller.emergencyStop();
-       rc.emergencyStop();
-    }
-};
+    case MSG_EVENT_DOOR:
+      // door state changed. do somtin about it
+      
+      break;
+  } 
+}
 
 
-int32_t motor_speed = 400;
-int32_t motor_accel = 500;
-//
-//int32_t open_position = 0;
-//int32_t closed_position;
+void on_rx_inner(const uint8_t* buffer, size_t size)
+{
+  switch (buffer[0]) {
+    case MSG_OUTER_STATE: break;
+    case MSG_OPEN: 
+      if (homing_done) {
+        do_open();
+      }
+      break;
+    case MSG_CLOSE: 
+      if (homing_done) {
+        do_close();
+      }
+      break;
+    case MSG_HOME: 
+      do_homing();
+      break;
+    case MSG_UI_OVERRIDE: break;
+  } 
+}
 
-Bounce button_start = Bounce();
-Bounce button_stop = Bounce();
+void on_rx(const uint8_t* buffer, size_t size)
+{
+//  shell_printf("RX %d bytes\r\n", size);
 
-Door d1(34, 33, 35, 36);
-Door d2(38, 37, 32, 39);
-
-
-#define SW_DATA (26)
-#define SW_CLOCK (27)
-#define SW_LATCH (25)
-ParallelInputs buttons(SW_DATA, SW_CLOCK, SW_LATCH);
-
-#define SSEG_DATA (5)
-#define SSEG_CLOCK (6)
-#define SSEG_LATCH (7) 
-SSeg sseg(SSEG_DATA, SSEG_CLOCK, SSEG_LATCH);
-
-#define BL_DATA   (24)
-#define BL_CLOCK  (12)
-#define BL_LATCH  (4)
-ParallelOutputs button_leds(BL_DATA, BL_CLOCK, BL_LATCH);
-
-//void do_homing_cycle()
-//{
-//  s1.setAcceleration(1000);
-//
-//  if (!digitalRead(35)) {
-//    s1.setMaxSpeed(-600);
-//    rc.rotateAsync(s1);
-//    while (!digitalRead(35));
-//    rc.stop();
-//  }
-//
-//  // reset the open position to 0
-//  s1.setPosition(-10);
-//
-//  if (!digitalRead(36)) {
-//    s1.setMaxSpeed(600);
-//    rc.rotateAsync(s1);
-//    while (!digitalRead(36));
-//    rc.stop();
-//  }
-//
-//  // motor is now is now in the closed position
-//  closed_position = s1.getPosition();
-//}
-
-
-//const int latchPin = 7;
-//const int clockPin = 6;
-//const int dataPin = 5;
+  last_rx = millis();
+  if (is_outer) {
+    on_rx_outer(buffer, size);
+  } else {
+    on_rx_inner(buffer, size);
+  }
+}
 
 void setup() {
-  // put your setup code here, to run once:
-  //  pinMode(PIN_DIR, OUTPUT);
-  //  pinMode(PIN_PULSE, OUTPUT);
-  //  pinMode(36, INPUT_PULLUP);
-  //  pinMode(35, INPUT_PULLUP);
+  // board id
+  pinMode(15, INPUT);
+  is_outer = digitalRead(15) == HIGH;
 
+  // b2b comms
+  Serial1.begin(9600);
+  b2b_comms.setStream(&Serial1);
+  b2b_comms.setPacketHandler(on_rx);
+ 
+  // LED indicator on teensy
   pinMode(13, OUTPUT);
   digitalWrite(13, HIGH);
 
-//button_leds.begin();
-//  pinMode(latchPin, OUTPUT);
-//  pinMode(dataPin, OUTPUT);  
-//  pinMode(clockPin, OUTPUT);
-
-  //  button_start.attach(PIN_SW1, INPUT_PULLUP);
-  //  button_stop.attach(PIN_SW2, INPUT_PULLUP);
-
+  // USB serial for debug
   Serial.begin(9600);
   shell_init(shell_reader, shell_writer, PSTR("Hi-Proof elevatormatic"));
-  
-//  shell_register(command_home, PSTR("home"));
-//  shell_register(command_info, PSTR("info"));
-//  shell_register(command_open, PSTR("open"));
-//  shell_register(command_close, PSTR("close"));
-//  shell_register(command_move, PSTR("move"));
 
-  shell_register(command_go, PSTR("g"));
-  shell_register(command_back, PSTR("b"));
-  shell_register(command_halt, PSTR("h"));
-  shell_register(command_estop, PSTR("e"));
-  shell_register(command_motor, PSTR("m"));
-  //  shell_register(command_motor, PSTR("m"));
-
-  //
-  //  s1.setTargetRel(-500);
-  //  controller.move(s1);
-
-  //shell_printf("Starting D1 homing cycle\r\n");
-  //    d1.homing_cycle();
-  //    d2.homing_cycle();
-  //  shell_printf("D1 closed position: %d\r\n", d1.pos_closed);
-
-  //  do_homing_cycle();
-  //  s1.setMaxSpeed(DOOR_SPEED);
-  //  s1.setAcceleration(DOOR_ACCEL);
-
-  //command_home(0, NULL);
+  if (is_outer) {
+    outer_state.system_mode = MODE_NOT_CONNECTED;
+  }
+    
+  shell_register(command_info, PSTR("i"));
+  shell_register(command_home, PSTR("home"));
 }
 
-
-FancyButton b1(
-  ParallelBounce(buttons, 0),
-  ParallelOutputPin(button_leds, 3)
-);
-
-FancyButton b2(
-  ParallelBounce(buttons, 1),
-  ParallelOutputPin(button_leds, 2)
-);
-
-FancyButton b3(
-  ParallelBounce(buttons, 2),
-  ParallelOutputPin(button_leds, 1)
-);
-
-FancyButton b4(
-  ParallelBounce(buttons, 3),
-  ParallelOutputPin(button_leds, 0)
-);
-
-FancyButton b5(
-  ParallelBounce(buttons, 7),
-  ParallelOutputPin(button_leds, 4)
-);
-
-FancyButton b6(
-  ParallelBounce(buttons, 6),
-  ParallelOutputPin(button_leds, 5)
-);
-
-FancyButton& button_star = b1;
-FancyButton& button_13f = b2;
-FancyButton& button_14f = b3;
-FancyButton& button_bell = b4;
-FancyButton& button_close = b5;
-FancyButton& button_open = b6;
-
-void on_press() {
-  Serial.printf("Pressed\r\n");
-}
-
-void on_hold() {
-  Serial.printf("Held\r\n");
-}
-
-static bool maintenance_mode = false;
-static int32_t position_star = 0;
-static int32_t position_13f = 0;
-static int32_t position_14f = 0;
-
-void maint_start() 
+void process_outer() 
 {
-  maintenance_mode = true;
-  controller.stop();
+
 }
 
-void maint_stop() 
+void send_button_events(FancyButton& b, uint8_t button_id) {
+  event_button_t button_event;
+  button_event.all_buttons = panel.buttons_state();
+
+  if (b.pressed) {
+    button_event.button = button_id | BTN_PRESS;
+    shell_printf("Sending button event %d\r\n", button_id);
+    tx_msg(MSG_EVENT_BUTTON, (uint8_t*)&button_event, sizeof(button_event));
+  }  
+  if (b.held) {
+    shell_printf("Sending button event hold\r\n");
+    button_event.button = button_id | BTN_HOLD;
+    tx_msg(MSG_EVENT_BUTTON, (uint8_t*)&button_event, sizeof(button_event));
+  }  
+}
+
+void process_inner() 
 {
-  maintenance_mode = false;
-  rc.stop();
+  // send key press events
+  send_button_events(panel.b1, BTN1);
+  send_button_events(panel.b2, BTN2);
+  send_button_events(panel.b3, BTN3);
+  send_button_events(panel.b4, BTN4);
+  send_button_events(panel.b5, BTN5);
+  send_button_events(panel.b6, BTN6);
 }
 
 void loop() {
+  // update inputs
   buttons.update();
-
-  if (maintenance_mode) {
-    button_bell.on = (millis() / 500) % 2 == 0;
-    button_open.on = true;
-    button_close.on = true;
-
-    sseg.values[0] = SEG_G;
-    sseg.values[1] = SEG_G;
-
-    button_open.update(
-      []() -> void { 
-        sseg.values[0] = SEG_G;
-        sseg.values[1] = SEG_G | SEG_B | SEG_C;
-        d1.go(); 
-      }
-    );
-
-    button_close.update(
-      []() -> void { 
-        sseg.values[0] = SEG_G | SEG_F | SEG_E;
-        sseg.values[1] = SEG_G;
-        d1.back(); 
-      }
-    );
-
-    button_13f.update(
-      NULL, 
-      []() -> void { position_13f = d1.s.getPosition(); }
-    );
-
-    button_14f.update(
-      NULL, 
-      []() -> void { position_14f = d1.s.getPosition(); }
-    );
-
-    button_star.update(
-      NULL, 
-      []() -> void { position_star = d1.s.getPosition(); }
-    );
-
-    button_bell.update(
-      []() -> void {
-        sseg.values[0] = SEG_G;
-        sseg.values[1] = SEG_G;
-        d1.halt();
-      },
-      []() -> void {
-        d1.estop();
-        maintenance_mode = false;
-      }
-    );
-
-    if (button_bell.on) {
-      sseg.values[0] |= SEG_DP;
-    } else {
-      sseg.values[0] &= ~SEG_DP;
-    }
-
-    
+  b2b_comms.update();
+  panel.update();
+  
+  // process
+  shell_task();
+  
+  if (is_outer) {
+    process_outer();
   } else {
-    button_bell.on = false;
-    button_open.on = false;
-    button_close.on = false;    
-
-    sseg.values[0] &= ~SEG_DP;
-
-    button_13f.update(
-      []() -> void { 
-        sseg.values[0] = SSeg::digit(1);
-        sseg.values[1] = SSeg::digit(3);
-        d1.goto_position(position_13f); 
-      }
-    );
-
-    button_14f.update(
-      []() -> void { 
-        sseg.values[0] = SSeg::digit(1);
-        sseg.values[1] = SSeg::digit(4);
-        d1.goto_position(position_14f); 
-      }
-    );
-
-    button_star.update(
-      []() -> void { 
-        sseg.values[0] = SSeg::digit(1);
-        sseg.values[1] = SSeg::digit(2);
-        d1.goto_position(position_star); 
-      }
-    );
-
-    button_bell.update(
-      []() -> void { d1.estop(); },
-      []() -> void { maintenance_mode = true; }
-    );
-
+    process_inner();
   }
 
-  b1.update();
-  b2.update();
-  b3.update();
-  b4.update();
-  b5.update();
-  b6.update();
-  
+  // update outputs
   button_leds.update();
+  sseg.values[0] = SSeg::digit(3);
   sseg.update();
 
-  //Serial.println(buttons.values, BIN);
-  //  Serial.printf("SW1: %d   SW2: %d\r\n", digitalRead(PIN_SW1), digitalRead(PIN_SW2));
-  ///delay(500);
-
-//  digitalWrite(latchPin, LOW);
-//  shiftOut(dataPin, clockPin, MSBFIRST, (millis() / 100) & 0xFF);
-//  shiftOut(dataPin, clockPin, MSBFIRST, (millis() / 100) & 0xFF);
-//  shiftOut(dataPin, clockPin, MSBFIRST, (millis() / 100) & 0xFF);
-//  digitalWrite(latchPin, HIGH);
-
-
-  //  d1.s.setTargetAbs(0);
-  //  d2.s.setTargetAbs(0);
-  //  controller.move(d1.s, d2.s);
-  //  delay(1000);
-  //  d1.s.setTargetAbs(d1.pos_closed);
-  //  d2.s.setTargetAbs(d2.pos_closed);
-  //  controller.move(d1.s, d2.s);
-  //  delay(1000);
-
-  //  button_start.update();
-  //  button_stop.update();
-  //
-  //  if (button_start.rose()) {
-  //    rc.rotateAsync(s1);
-  //  }
-  //
-  //  if (button_stop.rose()) {
-  //    rc.emergencyStop();
-  //  }
-
-  shell_task();
+//  // send state if enough time passed
+  if (millis() - last_tx > 1000) {
+    if (is_outer) {
+      tx_msg(MSG_OUTER_STATE, (uint8_t*)&outer_state, sizeof(outer_state));
+    } else {
+      tx_msg(MSG_INNER_STATE, (uint8_t*)&inner_state, sizeof(inner_state));
+    }
+    last_tx = millis();
+  }
 }
 
 //-------------------------------------------------------------------------------------------
 // CLI
 
-int command_home(int argc, char** argv)
-{
-  shell_printf("Starting D1 homing cycle\r\n");
-  d1.homing_cycle();
-  shell_printf("D1 closed position: %d\r\n", d1.pos_closed);
-
-  shell_printf("Starting D2 homing cycle\r\n");
-  d2.homing_cycle();
-  shell_printf("D1 closed position: %d\r\n", d2.pos_closed);
-
-  return SHELL_RET_SUCCESS;
-}
-
 int command_info(int argc, char ** argv)
 {
-  shell_printf("D1 SW1: %d   SW2: %d   Pos: %d\r\n", digitalRead(d1.pin_sw1), digitalRead(d1.pin_sw2), d1.s.getPosition());
-  shell_printf("D2 SW1: %d   SW2: %d   Pos: %d\r\n", digitalRead(d2.pin_sw1), digitalRead(d2.pin_sw2), d2.s.getPosition());
+  bool outer = digitalRead(15) == HIGH;
+  shell_printf("Board id: %s\r\n", outer ? "OUTER" : "INNER");
   return SHELL_RET_SUCCESS;
 }
 
-int command_open(int argc, char ** argv)
+int command_home(int argc, char ** argv)
 {
-  d1.s.setTargetAbs(0);
-  d2.s.setTargetAbs(0);
-  controller.move(d1.s, d2.s);
-  return SHELL_RET_SUCCESS;
-}
-
-int command_close(int argc, char ** argv)
-{
-  d1.s.setTargetAbs(d1.pos_closed);
-  d2.s.setTargetAbs(d2.pos_closed);
-  controller.move(d1.s, d2.s);
-  return SHELL_RET_SUCCESS;
-}
-
-int command_move(int argc, char ** argv) {
-  if (argc >= 2) {
-    int new_pos = atoi(argv[1]);
-    d1.s.setTargetRel(new_pos);
-    controller.move(d1.s);
-  }
-}
-
-int command_go(int argc, char ** argv)
-{
-   d1.s.setMaxSpeed(motor_speed);
-   d1.s.setAcceleration(motor_accel);
-   rc.rotateAsync(d1.s);
-   return SHELL_RET_SUCCESS;
-}
-
-int command_back(int argc, char ** argv)
-{
-  d1.s.setMaxSpeed(-motor_speed);
-  d1.s.setAcceleration(motor_accel);
-   rc.rotateAsync(d1.s);
-   return SHELL_RET_SUCCESS;
-}
-
-int command_halt(int argc, char ** argv)
-{
-   rc.stopAsync();
-   return SHELL_RET_SUCCESS;
-}
-
-int command_estop(int argc, char ** argv)
-{
-   rc.emergencyStop();
-   return SHELL_RET_SUCCESS;
-}
-
-
-int command_motor(int argc, char** argv)
-{
-  if (argc == 1) {
-    shell_printf("Max speed:  %d\r\n", motor_speed);
-    shell_printf("Max accel:  %d\r\n", motor_accel);
-    shell_printf("Position:   %d\r\n", d1.s.getPosition());
-  }
-  if (argc >= 2) {
-    if (0 == strcmp(argv[1], "speed")) {
-      if (argc >= 3) {
-        motor_speed = atoi(argv[2]);
-      }
-      shell_printf("Max speed:  %d\r\n", motor_speed);
-    }
-    if (0 == strcmp(argv[1], "accel")) {
-      if (argc >= 3) {
-        motor_accel = atoi(argv[2]);        
-      }
-      shell_printf("Max accel:  %d\r\n", motor_accel);
-    }
-//    if (0 == strcmp(argv[1], "start")) {
-//      rc.rotateAsync(s1);
-//    }
-//    if (0 == strcmp(argv[1], "stop")) {
-//      rc.stopAsync();
-//    }
-//    if (0 == strcmp(argv[1], "e")) {
-//      rc.emergencyStop();
-//    }
-//
-  }
+  do_homing();
   return SHELL_RET_SUCCESS;
 }
 
