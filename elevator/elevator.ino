@@ -89,6 +89,14 @@ class Elevator
       }
     }
 
+    void open() {
+      doors(true);
+    }
+
+    void close() {
+      doors(false);
+    }
+
     void update() 
     {
       d1.update();
@@ -111,210 +119,6 @@ class Elevator
     }
 };
 
-
-// Shlomo TODO: will the other timer work if we only init 2 controllers?
-//class Elevator 
-//{
-//  public:
-  
-//  // used for the doors
-//  StepControl doors_controller;
-//  // floor
-//  StepControl floor_controller;
-//  // used for homing only - both doors and floor
-//  RotateControl rc;
-  
-//  Door d1;
-//  Door d2;
-//  Floor susan;
-
-//  uint8_t doors_state;
-//  uint8_t floor_state;
-
-  // --------------------------------------------------------------
-
-//  Elevator()
-//    : d1(38, 37, 39, 32),    // Port B
-//      d2(30, 31, 28, 29),    // Port C
-//      susan(34, 33, 35, 36)  // Port A
-//      doors_controller(25),  // Pulse width. Make larger if motors are finicky
-//      floor_controller(25),
-//      rc(25)
-//  {
-//    
-//  }
-
-  // --------------------------------------------------------------
-  // door functions
-
-//  // blocking - using rc
-//  void home_doors()
-//  {
-//    // if doors are moving, lets stop them
-//    if (doors_state == DOOR_OPENING || doors_state == DOOR_CLOSING) {
-//      doors_controller.stop();
-//      doors_state = DOOR_NOT_CALIBRATED;
-//    }
-//
-//    d1.calibrate();
-//    d1.open();
-//    d2.calibrate();
-//    d2.open();
-    
-//    d1.homing_cycle(rc);
-//    d1.s.setTargetAbs(0);
-//    // save some time - open the door async while we start homing the other door
-//    doors_controller.moveAsync(d1.s);
-//    
-//    d2.homing_cycle(rc);
-//    d2.s.setTargetAbs(0);
-//    doors_controller.move(d2.s);
-//
-//    doors_state = DOOR_OPEN;
- // }
-
-//  // async - using door controller
-//  void open_doors()
-//  {
-//    if (doors_state == DOOR_NOT_CALIBRATED) {
-//      shell_printf("ERROR: tried opening doors before homing\r\n");
-//      return;
-//    }
-//    
-//    if (doors_state == DOOR_OPENING || doors_state == DOOR_OPEN) {
-//      return;
-//    }
-//
-//    doors_state = DOOR_OPENING;
-//
-//    // this is a no-op if doors aren't moving
-//    // blocking, but not for long
-//    doors_controller.stop(); 
-//    
-//    d1.s.setTargetAbs(0);
-//    d2.s.setTargetAbs(0);
-//    doors_controller.moveAsync(d1.s, d2.s);
-//  }
-//
-//  // async - using door controller
-//  void close_doors()
-//  {
-//    if (doors_state == DOOR_NOT_CALIBRATED) {
-//      shell_printf("ERROR: tried closing doors before homing\r\n");
-//      return;
-//    }
-//
-//    if (doors_state == DOOR_CLOSING || doors_state == DOOR_CLOSED) {
-//      return;
-//    }
-//
-//    doors_state = DOOR_CLOSING;
-//
-//    // this is a no-op if doors aren't moving
-//    // blocking, but not for long
-//    doors_controller.stop(); 
-//    
-//    d1.s.setTargetAbs(d1.pos_closed);
-//    d2.s.setTargetAbs(d2.pos_closed);
-//    doors_controller.moveAsync(d1.s, d2.s);
-//  }
-//  
-//  // --------------------------------------------------------------
-//  // floor functions
-//
-//  // blocking - using rc
-//  void home_floor()
-//  {
-//    if (floor_state == FLOOR_MOVING) {
-//      floor_controller.stop();
-//      floor_state = FLOOR_NOT_CALIBRATED;
-//    }
-//    
-//    susan.homing_cycle(rc);
-//    floor_state = FLOOR_STATIONARY;
-//  }
-//
-//  // async - using rc
-//  void rotate_floor(bool direction)
-//  {
-//    if (floor_state == FLOOR_MOVING) {
-//      // blocking - but not for long
-//      floor_controller.stop();
-//      floor_state = FLOOR_STATIONARY;
-//    }
-//    
-//    floor_state = FLOOR_MAINTAINING;
-//    // blocking - but not for long
-//    rc.stop();
-//    susan.s.setMaxSpeed(direction ? HOMING_SPEED : -HOMING_SPEED);
-//    susan.s.setAcceleration(HOMING_ACCEL);
-//    rc.rotateAsync(susan.s);
-//  }
-//
-//  // rc - blocking
-//  void halt_floor()
-//  {
-//    rc.stop();
-//    floor_state = FLOOR_STATIONARY;
-//  }
-//
-//  // async - using floor controller
-//  void rotate_floor_to(int32_t position)
-//  {
-//    if (floor_state == FLOOR_NOT_CALIBRATED) {
-//      shell_printf("ERROR: tried rotating floor before homing\r\n");
-//      return;
-//    }
-//
-//    floor_state = FLOOR_MOVING;
-//    floor_controller.stop();
-//    susan.s.setMaxSpeed(FLOOR_SPEED);
-//    susan.s.setAcceleration(FLOOR_ACCEL);
-//    susan.s.setTargetAbs(pos);
-//    sc.moveAsync(susan.s);
-//  }
-//
-//  void update()
-//  {
-//    // handle async movement for floor
-//    if (floor_state == FLOOR_MOVING || floor_state == FLOOR_MAINTAINING) {
-//      // check limit switches - this is end switch
-//      if (susan.sw1_hit() && susan.sw2_hit()) {
-//        floor_state == FLOOR_MOVING ? floor_controller.emergencyStop() : rc.emergencyStop();
-//        floor_state == FLOOR_NOT_CALIBRATED;
-//      }
-//
-//      // just one switch - we're home
-//      else if (susan.sw1_hit()) {
-//        floor_state == FLOOR_MOVING ? floor_controller.stop() : rc.stop();
-//        floor_state = FLOOR_STATIONARY;
-//        susan.setPosition(0);
-//      }
-//
-//      if (floor_state == FLOOR_MOVING) {
-//        // if controller is done, change state to stationary
-//        // TODO
-//      }
-//    }
-//
-//    // handle async movement for doors
-//    if (doors_state == DOOR_OPENING) {
-//      // if controller is done {
-//        doors_state = DOOR_OPEN;
-//
-//      // } else - controller is not done {
-//        // we hit the home switch before we were supposed to - stop the door and reset home position
-//        if (d1.sw1_hit()) {
-//            d1.s.setPosition(0);
-//        }
-//        if (d2.sw1_hot()) {
-//          d2.s.setPosition(0);
-//        }
-//      //}
-//    }
-//  }
-//};
-
 Elevator elevator(false);
 
 void tx_msg(uint8_t msg, uint8_t * buffer, uint8_t size) {
@@ -335,7 +139,7 @@ void on_rx_button_event(event_button_t * evt)
 {
   uint8_t event_id = evt->button & 0xF0 >> 4;
   uint8_t button_id = evt->button & 0x0F;
-  
+
   if (button_id == BTN_BELL) {
     if (event_id == BTN_HOLD) {
 //      if (!elevator.homing_done) {
@@ -350,14 +154,14 @@ void on_rx_button_event(event_button_t * evt)
 
   if (button_id == BTN_OPEN && event_id == BTN_PRESS) {
     tx_msg(MSG_OPEN, NULL, 0);
-    delay(100);
-//    elevator.open_doors();
+    delay(50);
+    elevator.open();
   }
 
   if (button_id == BTN_CLOSE && event_id == BTN_PRESS) {
     tx_msg(MSG_CLOSE, NULL, 0);
-    delay(100);
-//    elevator.close_doors();
+    delay(50);
+    elevator.close();
   }
 }
 
@@ -395,11 +199,11 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
   switch (buffer[0]) {
     case MSG_OUTER_STATE: break;
     case MSG_OPEN: 
-//      elevator.open_doors();
+      elevator.open();
       break;
       
     case MSG_CLOSE: 
-     // elevator.close_doors();
+      elevator.close();
       break;
       
     case MSG_HOME: 
