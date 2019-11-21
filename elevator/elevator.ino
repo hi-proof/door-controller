@@ -2,10 +2,35 @@
 #include <TeensyStep.h>
 #include <Shell.h>
 #include <Bounce2.h>
+#include <FastLED.h>
+#include <SD.h>
+#include <Audio.h>
 
 #include "parallelio.h"
 #include "state.h"
 #include "controllers.h"
+
+//--------------------------------------------------------------------------
+
+
+// GUItool: begin automatically generated code
+AudioPlaySdRaw           playBackground;     //xy=357,267
+AudioPlayMemory          playDings;       //xy=367,198
+AudioMixer4              mixerTop;         //xy=627,279
+AudioMixer4              mixerBottom;         //xy=629,365
+AudioOutputI2S           i2s1;           //xy=815,281
+AudioOutputUSB           usb1;           //xy=815,353
+AudioConnection          patchCord1(playBackground, 0, mixerTop, 1);
+AudioConnection          patchCord2(playBackground, 0, mixerBottom, 1);
+AudioConnection          patchCord3(playDings, 0, mixerTop, 0);
+AudioConnection          patchCord4(playDings, 0, mixerBottom, 0);
+AudioConnection          patchCord5(mixerTop, 0, i2s1, 0);
+AudioConnection          patchCord6(mixerTop, 0, usb1, 0);
+AudioConnection          patchCord7(mixerBottom, 0, i2s1, 1);
+AudioConnection          patchCord8(mixerBottom, 0, usb1, 1);
+AudioControlSGTL5000     sgtl5000_1;     //xy=639,160
+// GUItool: end automatically generated code
+
 
 //--------------------------------------------------------------------------
 
@@ -235,6 +260,8 @@ void setup() {
   // board id
   pinMode(15, INPUT);
   is_outer = digitalRead(15) == HIGH;
+  // UNCOMMENT THIS
+  //elevator.with_floor = is_outer;
 
   // b2b comms
   Serial1.begin(9600);
@@ -249,24 +276,43 @@ void setup() {
   // LED indicator on teensy
   pinMode(13, OUTPUT);
   digitalWrite(13, HIGH);
-
     
   shell_register(command_info, PSTR("i"));
   shell_register(command_home, PSTR("home"));
   shell_register(command_test, PSTR("test"));
   shell_register(command_open, PSTR("open"));
   shell_register(command_close, PSTR("close"));
+
+  AudioMemory(100);
+  shell_printf("Opening SD...");
+  if (!SD.begin(BUILTIN_SDCARD)) {
+    shell_printf("Error opening SD\r\n");
+  } else {
+    shell_printf("Done\r\n");
+  }
+
+  sgtl5000_1.enable();
+  sgtl5000_1.volume(1.0);
+
+  mixerTop.gain(0, 1.0);
+  mixerTop.gain(1, 1.0);
+  mixerTop.gain(2, 1.0);
+  mixerTop.gain(3, 1.0);
+
+  mixerBottom.gain(0, 1.0);
+  mixerBottom.gain(1, 1.0);
+  mixerBottom.gain(2, 1.0);
+  mixerBottom.gain(3, 1.0);
 }
 
 void process_outer() 
 {
   // call button held when we're not calibrated yet
-//  if (panel.button_call.held && !elevator.homing_done) {
-//    tx_msg(MSG_HOME, NULL, 0);
-//    delay(100);
-//    elevator.home_doors();
-//    elevator.home_floor();
-//  }
+  if (panel.button_call.held && !elevator.calibrated()) {
+    tx_msg(MSG_HOME, NULL, 0);
+    delay(50);
+    elevator.calibrate();
+  }
 }
 
 void send_button_events(FancyButton& b) {
@@ -331,7 +377,7 @@ void loop() {
 
 //  // send state if enough time passed
   if (millis() - last_tx > 1000) {
-    command_info(0, NULL);
+    //command_info(0, NULL);
     if (is_outer) {
       tx_msg(MSG_OUTER_STATE, (uint8_t*)&outer_state, sizeof(outer_state));
     } else {
@@ -377,8 +423,9 @@ int command_home(int argc, char ** argv)
 
 int command_test(int argc, char ** argv)
 {
-  elevator.calibrate();
-  elevator.susan.rotate(true);
+  playBackground.play("LEVEL0.RAW");
+//  elevator.calibrate();
+//  elevator.susan.rotate(true);
   
 //elevator.susan.rotate(true);
 //  delay(1000);

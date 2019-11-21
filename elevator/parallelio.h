@@ -191,11 +191,11 @@ class ParallelBounce : public Bounce {
     }
 };
 
-class OutputPin
+class OutputPinBase
 {
   public:
     uint8_t pin;
-    OutputPin(uint8_t pin) {
+    OutputPinBase(uint8_t pin) {
       this->pin = pin;
       setPinMode(pin, OUTPUT);
     }
@@ -212,11 +212,11 @@ class OutputPin
     
 };
 
-class ParallelOutputPin : public OutputPin {
+class ParallelOutputPin : public OutputPinBase {
   ParallelOutputs& po;
   
   public:
-    ParallelOutputPin(ParallelOutputs& po, uint8_t pin) : po(po), OutputPin(pin)
+    ParallelOutputPin(ParallelOutputs& po, uint8_t pin) : po(po), OutputPinBase(pin)
     {
     }
 
