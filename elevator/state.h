@@ -4,7 +4,7 @@
 
 enum {
   MODE_NOT_CONNECTED = 0,
-  MODE_MEASUREMENT,
+  MODE_MAINTENANCE,
   MODE_ONLINE,
   MODE_OFFLINE
 };
@@ -16,6 +16,13 @@ enum {
   DOOR_CLOSED,
   DOOR_CLOSING,
   DOOR_LOCKED
+};
+
+enum {
+  FLOOR_NOT_CALIBRATED,
+  FLOOR_MOVING,
+  FLOOR_MAINTAINING,
+  FLOOR_STATIONARY
 };
 
 enum {
@@ -42,17 +49,20 @@ enum {
 };
 
 enum {
-  BTN1 = 0b000001,
-  BTN2 = 0b000010,
-  BTN3 = 0b000100,
-  BTN4 = 0b001000,
-  BTN5 = 0b010000,
-  BTN6 = 0b100000,
+  BTN_CALL = 0,
+  BTN_STAR = 0,
+  BTN_13,
+  BTN_14,
+  BTN_BELL,
+  BTN_CLOSE,
+  BTN_OPEN,  
 };
 
-enum {
-  BTN_PRESS = 0b10000000,
-  BTN_HOLD  = 0b01000000
+enum {  
+  BTN_PRESS   = 1,
+  BTN_RELEASE,
+  BTN_CLICK,
+  BTN_HOLD,
 };
 
 #pragma pack(push, 1)
@@ -70,8 +80,8 @@ typedef struct {
 } outer_state_t;
 
 typedef struct {
-  uint8_t button;
-  uint8_t all_buttons;
+  uint8_t button;       // 4 high bits are event id, 4 low bits are button id
+  uint8_t all_buttons;  // bitmask of all buttons
 } event_button_t;
 
 typedef struct {

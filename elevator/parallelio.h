@@ -1,5 +1,6 @@
 #pragma once
 #include "Bounce2.h"
+#include "state.h"
 
 //--------------------------------------------------------------------------------------
 // Shift register based inputs & outputs
@@ -237,31 +238,36 @@ class FancyButton
   public:
     ParallelBounce input;
     ParallelOutputPin out;
-
+    uint8_t button_id;
+    
     bool held_called;
     bool on;
     bool on_on_press;
 
-    bool pressed;
+    bool clicked;
     bool held;
+    bool pressed;
+    bool released;
    
-    FancyButton(ParallelBounce input, ParallelOutputPin out) : input(input), out(out)
+    FancyButton(ParallelBounce input, ParallelOutputPin out, uint8_t button_id) : input(input), out(out), button_id(button_id)
     {
       on_on_press = true;
       held_called = true;
-      pressed = false;
+      clicked = false;
       on = false;
     }
 
-    void update(void (*on_pressed)() = NULL, void (*on_held)() = NULL) {
+    void update(void (*on_clicked)() = NULL, void (*on_held)() = NULL) {
       held = false;
-      pressed = false;
+      clicked = false;
+      pressed = input.fell();
+      released = input.rose();
 
       input.update();
       if (input.rose() && !held_called) {
-        pressed = true;
-        if(on_pressed) {
-          on_pressed();
+        clicked = true;
+        if(on_clicked) {
+          on_clicked();
         }
       }
       if (input.read() == LOW && !held_called && input.duration() >= 1000) {
@@ -304,12 +310,12 @@ public:
   FancyButton& button_call;
 
   IOPanel(ParallelInputs& buttons, ParallelOutputs& button_leds, SSeg& sseg)
-    : b1(ParallelBounce(buttons, 0), ParallelOutputPin(button_leds, 3)),
-      b2(ParallelBounce(buttons, 1), ParallelOutputPin(button_leds, 2)),
-      b3(ParallelBounce(buttons, 2), ParallelOutputPin(button_leds, 1)),
-      b4(ParallelBounce(buttons, 3), ParallelOutputPin(button_leds, 0)),
-      b5(ParallelBounce(buttons, 7), ParallelOutputPin(button_leds, 4)),
-      b6(ParallelBounce(buttons, 6), ParallelOutputPin(button_leds, 5)),
+    : b1(ParallelBounce(buttons, 0), ParallelOutputPin(button_leds, 3), BTN_STAR),
+      b2(ParallelBounce(buttons, 1), ParallelOutputPin(button_leds, 2), BTN_13),
+      b3(ParallelBounce(buttons, 2), ParallelOutputPin(button_leds, 1), BTN_14),
+      b4(ParallelBounce(buttons, 3), ParallelOutputPin(button_leds, 0), BTN_BELL),
+      b5(ParallelBounce(buttons, 7), ParallelOutputPin(button_leds, 4), BTN_CLOSE),
+      b6(ParallelBounce(buttons, 6), ParallelOutputPin(button_leds, 5), BTN_OPEN),
       sseg(sseg)
   {
     FancyButton& button_star = b1;
