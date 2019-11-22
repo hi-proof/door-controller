@@ -14,22 +14,34 @@
 //--------------------------------------------------------------------------
 
 
+#include <Audio.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <SD.h>
+#include <SerialFlash.h>
+
 // GUItool: begin automatically generated code
-AudioPlaySdRaw           playBackground;     //xy=357,267
-AudioPlayMemory          playDings;       //xy=367,198
-AudioMixer4              mixerTop;         //xy=627,279
-AudioMixer4              mixerBottom;         //xy=629,365
-AudioOutputI2S           i2s1;           //xy=815,281
-AudioOutputUSB           usb1;           //xy=815,353
-AudioConnection          patchCord1(playBackground, 0, mixerTop, 1);
-AudioConnection          patchCord2(playBackground, 0, mixerBottom, 1);
-AudioConnection          patchCord3(playDings, 0, mixerTop, 0);
-AudioConnection          patchCord4(playDings, 0, mixerBottom, 0);
-AudioConnection          patchCord5(mixerTop, 0, i2s1, 0);
-AudioConnection          patchCord6(mixerTop, 0, usb1, 0);
-AudioConnection          patchCord7(mixerBottom, 0, i2s1, 1);
-AudioConnection          patchCord8(mixerBottom, 0, usb1, 1);
-AudioControlSGTL5000     sgtl5000_1;     //xy=639,160
+AudioPlaySdRaw           playBackground1; //xy=246,298
+AudioPlaySdRaw           playBackground2;     //xy=247,339
+AudioPlaySdRaw           playBackground3;     //xy=247,379
+AudioPlayMemory          playDings;      //xy=256,229
+AudioMixer4              mixerTop;       //xy=516,310
+AudioMixer4              mixerBottom;    //xy=518,396
+AudioOutputI2S           i2s1;           //xy=704,312
+AudioOutputUSB           usb1;           //xy=704,384
+AudioConnection          patchCord1(playBackground1, 0, mixerTop, 1);
+AudioConnection          patchCord2(playBackground1, 0, mixerBottom, 1);
+AudioConnection          patchCord3(playBackground2, 0, mixerTop, 2);
+AudioConnection          patchCord4(playBackground2, 0, mixerBottom, 2);
+AudioConnection          patchCord5(playBackground3, 0, mixerBottom, 3);
+AudioConnection          patchCord6(playBackground3, 0, mixerTop, 3);
+AudioConnection          patchCord7(playDings, 0, mixerTop, 0);
+AudioConnection          patchCord8(playDings, 0, mixerBottom, 0);
+AudioConnection          patchCord9(mixerTop, 0, i2s1, 0);
+AudioConnection          patchCord10(mixerTop, 0, usb1, 0);
+AudioConnection          patchCord11(mixerBottom, 0, i2s1, 1);
+AudioConnection          patchCord12(mixerBottom, 0, usb1, 1);
+AudioControlSGTL5000     sgtl5000_1;     //xy=528,191
 // GUItool: end automatically generated code
 
 
@@ -355,7 +367,7 @@ void on_rx_outer(const uint8_t* buffer, size_t size)
 {
   switch (buffer[0]) {
     case MSG_INNER_STATE:
-      memcpy(&inner_state, buffer[1], sizeof(inner_state));
+      memcpy(&inner_state, &buffer[1], sizeof(inner_state));
       break;
       
     case MSG_EVENT_BUTTON:
@@ -374,6 +386,78 @@ void on_rx_outer(const uint8_t* buffer, size_t size)
 //--------------------------------------------------------------------------
 // INNER CONTROLLER
 
+float lerp(float a, float b, float x)
+{
+  return a + x * (b - a);
+}
+
+constexpr int NUM_BACKGROUND_TRACKS = 3;
+float background_volumes[NUM_BACKGROUND_TRACKS] = {0};
+
+struct Transitions {
+  float source_volumes[NUM_BACKGROUND_TRACKS];
+  float dest_volumes[NUM_BACKGROUND_TRACKS];
+  int32_t start_time;
+  int32_t duration;
+
+  Transitions() :
+    source_volumes({0}), dest_volumes({1,0,0}), start_time(0), duration(1) {
+      
+  }
+
+  void start_transition(uint8_t target_floor) {
+    // copy current audio state as start
+    memcpy(source_volumes, background_volumes, sizeof(source_volumes));
+    memset(dest_volumes, 0, sizeof(dest_volumes));
+    dest_volumes[target_floor] = 1.;
+    
+    start_time = millis();
+    // TODO: vary according to target/source
+    duration = 3000;
+  }
+
+  void update() {
+    float relative_time = (millis() - start_time) / (float)duration;
+    if ((relative_time >= 0) && (relative_time <= 1.)) {
+      for(int i = 0; i < NUM_BACKGROUND_TRACKS; i++) {
+        background_volumes[i] = lerp(source_volumes[i], dest_volumes[i], relative_time);
+      }
+//      shell_printf("rel time: %d, bv: %d %d %d\r\n",
+//                    (int)(relative_time * 100),
+//                    (int)(background_volumes[0]*100),
+//                    (int)(background_volumes[1]*100),
+//                    (int)(background_volumes[2]*100));
+    } else {
+      memcpy(background_volumes, dest_volumes, sizeof(background_volumes));
+    }
+
+    for (int i = 0; i < NUM_BACKGROUND_TRACKS; i++) {
+      // TODO: up/down motion via panning between top and bottom
+      mixerTop.gain(i+1, background_volumes[i]);
+      mixerBottom.gain(i+1, background_volumes[i]);
+    }
+
+    if (background_volumes[0] > 0.02 && !playBackground1.isPlaying()) {
+      playBackground1.play("LEVEL0.RAW");
+    } else if (background_volumes[0] < 0.02 && playBackground1.isPlaying()) {
+      playBackground1.stop();
+    }
+
+    if (background_volumes[1] > 0.02 && !playBackground2.isPlaying()) {
+      playBackground2.play("LEVEL1.RAW");
+    } else if (background_volumes[1] < 0.02 && playBackground2.isPlaying()) {
+      playBackground2.stop();
+    }
+
+    if (background_volumes[2] > 0.02 && !playBackground3.isPlaying()) {
+      playBackground3.play("LEVEL2.RAW");
+    } else if (background_volumes[2] < 0.02 && playBackground3.isPlaying()) {
+      playBackground3.stop();
+    }
+  }
+};
+
+Transitions transitions;
 
 void on_rx_inner(const uint8_t* buffer, size_t size)
 {
@@ -395,6 +479,8 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
     case MSG_UI_OVERRIDE: break;
 
     case MSG_TRIGGER_TRANSITION:
+      // start transition to target floor
+      transitions.start_transition(buffer[1]);
       break;
   } 
 }
@@ -418,7 +504,7 @@ void on_rx(const uint8_t* buffer, size_t size)
 void setup() {
   // board id
   pinMode(15, INPUT);
-  is_outer = true; //digitalRead(15) == HIGH;
+  is_outer = digitalRead(15) == HIGH;
   
   elevator.with_floor = is_outer;
 
@@ -464,21 +550,15 @@ void setup() {
   mixerBottom.gain(3, 1.0);
 }
 
-struct Transition {
-  float relative_position;
-  
-  Transition(float relative_position) 
-    : relative_position(relative_position) {
-    
-  }
+// relative to motion length, so 1.0 is at motion's end
+float transition_positions[LOCATION_COUNT] = {
+  0.25,
+  0.5,
+  0.7
 };
 
-Transition transitions[LOCATION_COUNT] = {
-  Transition(0.25),
-  Transition(0.5),
-  Transition(0.7)
-};
-Transition *currentTransition = nullptr;
+// TODO: reset on MSG_HOME
+uint8_t transition_target = LOCATION_LOBBY;
 
 void process_outer() 
 {
@@ -529,26 +609,26 @@ void process_outer()
     // dest is elevator.destination_pos
     // origin is elevator.origin_pos
     uint8_t destination_floor = elevator.destination_id;
-    Transition *target = &transitions[destination_floor];
     // if not already triggered
-    if (target != currentTransition) {
+    if (destination_floor != transition_target) {
       // calculate our position in the motion, check if we passed the threshold
       float relative_position = (current_position - elevator.origin_pos) / (float)(elevator.destination_pos - elevator.origin_pos);
       // check if we crossed the trigger point
-      if (relative_position > target->relative_position) {
+      if (relative_position > transition_positions[destination_floor]) {
         shell_printf("Triggered transition to %d, position %d, origin %d, relative: %d\r\n",
                     elevator.destination_id,
                     current_position,
                     elevator.origin_pos,
                     (int)(relative_position*100));
         // mark triggered
-        currentTransition = target;
+        transition_target = destination_floor;
         // inform the inside part of the trigger
         tx_msg(MSG_TRIGGER_TRANSITION, &destination_floor, sizeof(destination_floor));
       }
     }
   } else {
-    currentTransition = nullptr;
+    // not moving
+    transition_target = elevator.destination_id;
   }
 }
 
@@ -585,6 +665,8 @@ void process_inner()
   send_button_events(panel.b6);
 
   inner_state.door_state = elevator.doors_state;
+  // audio
+  transitions.update();
 }
 
 void loop() {
@@ -663,30 +745,32 @@ int command_home(int argc, char ** argv)
 
 int command_test(int argc, char ** argv)
 {
+  //playBackground1.play("LEVEL0.RAW");
   //elevator.goto_destination(LOCATION_13F);
-    static int index = 0;
-  //playBackground.play("LEVEL0.RAW");
-  switch(index){
-    case 0:
-      elevator.goto_destination(LOCATION_13F);
-      break;
-    case 1:
-      elevator.goto_destination(LOCATION_14F);
-      break;
-    case 2:
-      elevator.goto_destination(LOCATION_13F);
-      break;
-    case 3:
-      elevator.goto_destination(LOCATION_LOBBY);
-      break;
-    case 4:
-      elevator.goto_destination(LOCATION_14F);
-      break;
-    case 5:
-      elevator.goto_destination(LOCATION_LOBBY);
-      break;
-  }
-  index = (index + 1) % 6;
+  static int index = 0;
+  transitions.start_transition(index % 3);
+  index++;
+//  switch(index){
+//    case 0:
+//      elevator.goto_destination(LOCATION_13F);
+//      break;
+//    case 1:
+//      elevator.goto_destination(LOCATION_14F);
+//      break;
+//    case 2:
+//      elevator.goto_destination(LOCATION_13F);
+//      break;
+//    case 3:
+//      elevator.goto_destination(LOCATION_LOBBY);
+//      break;
+//    case 4:
+//      elevator.goto_destination(LOCATION_14F);
+//      break;
+//    case 5:
+//      elevator.goto_destination(LOCATION_LOBBY);
+//      break;
+//  }
+//  index = (index + 1) % 6;
 
   
   //playBackground.play("LEVEL0.RAW");
