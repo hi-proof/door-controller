@@ -34,6 +34,7 @@ enum {
   MSG_OPEN,
   MSG_CLOSE,
   MSG_UI_OVERRIDE,
+  MSG_TRIGGER_TRANSITION,
 };
 
 enum {

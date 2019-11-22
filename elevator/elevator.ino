@@ -461,6 +461,22 @@ void setup() {
   mixerBottom.gain(3, 1.0);
 }
 
+struct Transition {
+  float relative_position;
+  
+  Transition(float relative_position) 
+    : relative_position(relative_position) {
+    
+  }
+};
+
+Transition transitions[LOCATION_COUNT] = {
+  Transition(0.25),
+  Transition(0.5),
+  Transition(0.7)
+};
+Transition *currentTransition = nullptr;
+
 void process_outer() 
 {
   outer_state.door_state = elevator.doors_state;
@@ -509,6 +525,27 @@ void process_outer()
     int32_t current_position = elevator.susan.s.getPosition();
     // dest is elevator.destination_pos
     // origin is elevator.origin_pos
+    uint8_t destination_floor = elevator.destination_id;
+    Transition *target = &transitions[destination_floor];
+    // if not already triggered
+    if (target != currentTransition) {
+      // calculate our position in the motion, check if we passed the threshold
+      float relative_position = (current_position - elevator.origin_pos) / (float)(elevator.destination_pos - elevator.origin_pos);
+      // check if we crossed the trigger point
+      if (relative_position > target->relative_position) {
+        shell_printf("Triggered transition to %d, position %d, origin %d, relative: %0.4f\r\n",
+                    elevator.destination_id,
+                    current_position,
+                    elevator.origin_pos,
+                    relative_position);
+        // mark triggered
+        currentTransition = target;
+        // inform the inside part of the trigger
+        tx_msg(MSG_TRIGGER_TRANSITION, &destination_floor, sizeof(destination_floor));
+      }
+    }
+  } else {
+    currentTransition = nullptr;
   }
 }
 
