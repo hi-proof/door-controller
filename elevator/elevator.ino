@@ -44,6 +44,16 @@ outer_state_t outer_state;
 
 bool is_outer;
 
+void tx_msg(uint8_t msg, uint8_t * buffer, uint8_t size) {
+  static uint8_t msg_buffer[255];
+  if (size > 254) {
+    size = 254;
+  }
+  msg_buffer[0] = msg;
+  memcpy(&msg_buffer[1], buffer, size);
+  b2b_comms.send(msg_buffer, size + 1);
+}
+
 //--------------------------------------------------------------------------
 // Globals and functions shared between inner and outer MCUs
 
@@ -58,17 +68,19 @@ class Elevator
     RotateControl rc;
 
     uint8_t mode;
-
     uint8_t doors_state;
-
     uint8_t floor_state;
+    
     uint8_t destination_id;
     int32_t destination_pos;
     int32_t origin_pos;
 
     int32_t positions[LOCATION_COUNT];
 
+    bool goto_pending;
     bool just_arrived;
+    bool just_started;
+    bool call_button_pressed;
 
     Elevator(bool with_floor=false)
     : rc(25),
@@ -78,11 +90,12 @@ class Elevator
       with_floor(with_floor),
       doors_state(DOOR_NOT_CALIBRATED),
       mode(MODE_NOT_CALIBRATED),
-      floor_state(FLOOR_NOT_CALIBRATED)
+      floor_state(FLOOR_NOT_CALIBRATED), 
+      call_button_pressed(false)
     {
-      positions[LOCATION_LOBBY] = 0; //load_location(LOCATION_LOBBY);
-      positions[LOCATION_13F] = 13000; //load_location(LOCATION_13F);
-      positions[LOCATION_14F] = 24000; //load_location(LOCATION_14F);
+      positions[LOCATION_LOBBY] = load_location(LOCATION_LOBBY);
+      positions[LOCATION_13F] = load_location(LOCATION_13F);
+      positions[LOCATION_14F] = load_location(LOCATION_14F);
     }
 
     int32_t load_location(uint8_t location_id) {
@@ -92,6 +105,7 @@ class Elevator
     }
 
     int32_t save_location(uint8_t location_id, int32_t position) {
+      positions[location_id] = position;
       EEPROM.put(location_id, position);
     }
 
@@ -105,10 +119,12 @@ class Elevator
     }
 
     void set_mode(uint8_t new_mode) {
+      shell_printf("Setting elevator mode to: %d\r\n", new_mode);
+      call_button_pressed = false;
       switch (new_mode) {
         case MODE_MAINTENANCE:
-          open();
           susan.stop(true);
+          open();
           break;
 
         case MODE_ONLINE:
@@ -116,6 +132,7 @@ class Elevator
           break;
 
         case MODE_OFFLINE:
+          susan.stop(true);
           goto_destination(LOCATION_LOBBY);
           open();
           break;
@@ -188,8 +205,10 @@ class Elevator
       this->destination_id = destination_id;
       this->destination_pos = positions[destination_id];
       this->origin_pos = susan.s.getPosition();
-      floor_state = FLOOR_MOVING;
-      susan.goto_pos(destination_pos);
+
+      this->goto_pending = true;
+      close();
+      tx_msg(MSG_CLOSE, NULL, 0);
     }
 
     void update() 
@@ -209,8 +228,19 @@ class Elevator
         }
       }
 
+      
       just_arrived = false;
-      if (floor_state == FLOOR_MOVING) {
+      just_started = false;
+      
+      if (floor_state == FLOOR_STATIONARY && mode == MODE_ONLINE && goto_pending) { 
+        // TODO: check for inner door state too
+        if (doors_state == DOOR_CLOSED) {
+          floor_state = FLOOR_MOVING;
+          susan.goto_pos(destination_pos);
+          goto_pending = false;
+          just_started = true;
+        }
+      } else if (floor_state == FLOOR_MOVING) {
         if (!susan.sc.isRunning()) {
           floor_state = FLOOR_STATIONARY;
           just_arrived = true;
@@ -221,17 +251,6 @@ class Elevator
 
 Elevator elevator(false);
 
-void tx_msg(uint8_t msg, uint8_t * buffer, uint8_t size) {
-  static uint8_t msg_buffer[255];
-  if (size > 254) {
-    size = 254;
-  }
-  msg_buffer[0] = msg;
-  memcpy(&msg_buffer[1], buffer, size);
-  b2b_comms.send(msg_buffer, size + 1);
-}
-
-
 //--------------------------------------------------------------------------
 // OUTER CONTROLLER
 
@@ -240,9 +259,69 @@ void on_rx_button_event(event_button_t * evt)
   uint8_t event_id = evt->button & 0xF0 >> 4;
   uint8_t button_id = evt->button & 0x0F;
 
-//  switch (elevator.mode) {
-//    //case MODE_
-//  }
+  shell_printf("Button event %d %d\r\n", button_id, event_id);
+
+  switch (elevator.mode) {
+    case MODE_NOT_CALIBRATED:
+    
+      break;
+      
+    case MODE_MAINTENANCE:
+      if (button_id == BTN_BELL && event_id == BTN_HOLD) {
+        elevator.set_mode(MODE_ONLINE);
+      }
+      if (button_id == BTN_BELL && event_id == BTN_CLICK) {
+        elevator.susan.stop(true);
+      }
+      if (button_id == BTN_OPEN && event_id == BTN_CLICK) {
+        elevator.susan.rotate(true);
+      }
+      if (button_id == BTN_CLOSE && event_id == BTN_CLICK) {
+        elevator.susan.rotate(false);
+      }
+      if (button_id == BTN_STAR && event_id == BTN_HOLD) {
+        elevator.save_location(LOCATION_LOBBY, elevator.susan.s.getPosition());
+      }
+      if (button_id == BTN_13 && event_id == BTN_HOLD) {
+        elevator.save_location(LOCATION_13F, elevator.susan.s.getPosition());
+      }
+      if (button_id == BTN_14 && event_id == BTN_HOLD) {
+        elevator.save_location(LOCATION_14F, elevator.susan.s.getPosition());
+      }
+      break;
+
+    case MODE_ONLINE:
+      if (button_id == BTN_BELL && event_id == BTN_HOLD) {
+        if (evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_13 && evt->all_buttons & BTN_14) {
+          elevator.set_mode(MODE_MAINTENANCE);
+        }
+        else if (evt->all_buttons & BTN_CLOSE && evt->all_buttons & BTN_OPEN) {
+          elevator.calibrate();
+        }
+        else if (evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_OPEN) {
+          elevator.set_mode(MODE_OFFLINE);
+        }
+      }
+      if (button_id == BTN_STAR && event_id == BTN_CLICK) {
+        elevator.goto_destination(LOCATION_LOBBY);
+      }
+      if (button_id == BTN_13 && event_id == BTN_CLICK) {
+        elevator.goto_destination(LOCATION_13F);
+      }
+      if (button_id == BTN_14 && event_id == BTN_CLICK) {
+        elevator.goto_destination(LOCATION_14F);
+      }
+      break;
+
+    case MODE_OFFLINE:
+      if (button_id == BTN_BELL && event_id == BTN_HOLD) {
+        if (evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_OPEN) {
+          elevator.set_mode(MODE_ONLINE);
+        }
+      }      
+      break;
+    
+  }
 //
 //  if (button_id == BTN_BELL && event_id == BTN_HOLD && 
 
@@ -384,6 +463,12 @@ void setup() {
 
 void process_outer() 
 {
+  outer_state.door_state = elevator.doors_state;
+  outer_state.floor_state = elevator.floor_state;
+  outer_state.system_mode = elevator.mode;
+  outer_state.destination = elevator.destination_id;
+  outer_state.call_button_pressed = elevator.call_button_pressed;
+  
   // call button held when we're not calibrated yet
   if (panel.button_call.held && !elevator.calibrated()) {
     tx_msg(MSG_HOME, NULL, 0);
@@ -391,7 +476,31 @@ void process_outer()
     elevator.calibrate();
   }
 
+  if (panel.button_call.clicked && elevator.mode == MODE_ONLINE) {
+    elevator.call_button_pressed = true;
+  }
+
   if (elevator.just_arrived) {
+    switch (elevator.destination_id) {
+      case LOCATION_LOBBY:
+        elevator.call_button_pressed = false;
+        //tx_msg(ding);
+        tx_msg(MSG_OPEN, NULL, 0);
+        delay(50);
+        elevator.open();
+        break;
+
+      case LOCATION_13F:
+        //tx_msg(ding);
+        elevator.open();
+        break;
+        
+      case LOCATION_14F:
+        //tx_msg(ding);
+        elevator.open();
+        break;
+      
+    }
     shell_printf("Just arrived at location ID: %d, should play ding now\r\n", elevator.destination_id);
   }
 
@@ -434,6 +543,8 @@ void process_inner()
   send_button_events(panel.b4);
   send_button_events(panel.b5);
   send_button_events(panel.b6);
+
+  inner_state.door_state = elevator.doors_state;
 }
 
 void loop() {

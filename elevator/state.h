@@ -76,6 +76,7 @@ typedef struct {
 
 typedef struct {
   uint8_t system_mode;
+  uint8_t floor_state;
   uint8_t door_state;
   uint8_t destination;
   uint8_t call_button_pressed;
