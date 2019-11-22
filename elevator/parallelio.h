@@ -30,6 +30,7 @@ class ParallelInputs {
       digitalWrite(this->pin_latch, HIGH);
       delay(1);
       this->values = shiftIn(pin_data, pin_clock, MSBFIRST);
+      //shell_printf("%X\r\n", values);
     }
 
     bool read(uint8_t pin) {
@@ -249,12 +250,10 @@ class FancyButton
     bool pressed;
     bool released;
    
-    FancyButton(ParallelBounce input, ParallelOutputPin out, uint8_t button_id) : input(input), out(out), button_id(button_id)
+    FancyButton(ParallelBounce input, ParallelOutputPin out, uint8_t button_id) 
+    : input(input), out(out), button_id(button_id), on_on_press(true), held_called(true),
+      clicked(false), on(false), held(false)
     {
-      on_on_press = true;
-      held_called = true;
-      clicked = false;
-      on = false;
     }
 
     void update(void (*on_clicked)() = NULL, void (*on_held)() = NULL) {
@@ -265,12 +264,14 @@ class FancyButton
 
       input.update();
       if (input.rose() && !held_called) {
+        shell_printf("Button %d clicked\r\n", button_id);
         clicked = true;
         if(on_clicked) {
           on_clicked();
         }
       }
-      if (input.read() == LOW && !held_called && input.duration() >= 1000) {
+      if (input.read() == LOW && !held_called && input.duration() >= 2000) {
+        shell_printf("Button %d held\r\n", button_id);
         held = true;
         held_called = true;
         if (on_held) {
@@ -301,13 +302,13 @@ public:
   FancyButton b6;
   SSeg& sseg;
 
-  FancyButton& button_star;
-  FancyButton& button_13f;
-  FancyButton& button_14f;
-  FancyButton& button_bell;
-  FancyButton& button_close;
-  FancyButton& button_open;
-  FancyButton& button_call;
+//  FancyButton& button_star;
+//  FancyButton& button_13f;
+//  FancyButton& button_14f;
+//  FancyButton& button_bell;
+//  FancyButton& button_close;
+//  FancyButton& button_open;
+//  FancyButton& button_call;
 
   IOPanel(ParallelInputs& buttons, ParallelOutputs& button_leds, SSeg& sseg)
     : b1(ParallelBounce(buttons, 0), ParallelOutputPin(button_leds, 3), BTN_STAR),
@@ -318,13 +319,13 @@ public:
       b6(ParallelBounce(buttons, 6), ParallelOutputPin(button_leds, 5), BTN_OPEN),
       sseg(sseg)
   {
-    FancyButton& button_star = b1;
-    FancyButton& button_13f = b2;
-    FancyButton& button_14f = b3;
-    FancyButton& button_bell = b4;
-    FancyButton& button_close = b5;
-    FancyButton& button_open = b6;
-    FancyButton& button_call = b1;
+//    FancyButton& button_star = b1;
+//    FancyButton& button_13f = b2;
+//    FancyButton& button_14f = b3;
+//    FancyButton& button_bell = b4;
+//    FancyButton& button_close = b5;
+//    FancyButton& button_open = b6;
+//    FancyButton& button_call = b1;
   }
 
   void update()
@@ -340,12 +341,12 @@ public:
   uint8_t buttons_state()
   {
     uint8_t ret = 
-      (b1.input.read() == LOW << 0) |
-      (b2.input.read() == LOW << 1) |
-      (b3.input.read() == LOW << 2) |
-      (b4.input.read() == LOW << 3) |
-      (b5.input.read() == LOW << 4) |
-      (b6.input.read() == LOW << 5);
+      ((b1.input.read() == LOW) << 0) |
+      ((b2.input.read() == LOW) << 1) |
+      ((b3.input.read() == LOW) << 2) |
+      ((b4.input.read() == LOW) << 3) |
+      ((b5.input.read() == LOW) << 4) |
+      ((b6.input.read() == LOW) << 5);
     return ret;
   }
 };

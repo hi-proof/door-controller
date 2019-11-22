@@ -5,10 +5,10 @@
 const uint32_t HOMING_SPEED = 500;
 const uint32_t HOMING_ACCEL = 1500;
 
-const uint32_t DOOR_SPEED = 6000;
-const uint32_t DOOR_ACCEL = 1800;
+const uint32_t DOOR_SPEED = 5000;
+const uint32_t DOOR_ACCEL = 1500;
 
-const uint32_t FLOOR_SPEED = 1500;
+const uint32_t FLOOR_SPEED = 1200;
 const uint32_t FLOOR_ACCEL = 700;
 
 enum {
@@ -40,6 +40,8 @@ class MotorAndSwitches
     int32_t pending_pos;
     bool pending_goto;
 
+    uint8_t stop_sw;
+
     MotorAndSwitches(uint8_t pin_pulse, uint8_t pin_dir, uint8_t pin_sw1, uint8_t pin_sw2, RotateControl& rc)
       : s(pin_pulse, pin_dir), sc(25), rc(rc),
         homing_speed(HOMING_SPEED), homing_accel(HOMING_ACCEL),
@@ -65,11 +67,19 @@ class MotorAndSwitches
     }
 
     // async
-    void rotate(bool dir) 
+    void rotate(bool dir, int speed=0, int accel=0) 
     {
+      if (speed == 0) {
+        speed = motor_speed;
+      }
+      if (accel == 0) {
+        accel = motor_accel;
+      }
+      
       stop(true);
-      s.setMaxSpeed(dir ? homing_speed : -homing_speed);
-      s.setAcceleration(homing_accel);
+      stop_sw = (dir) ? pin_sw2 : pin_sw1; 
+      s.setMaxSpeed(dir ? speed : -speed);
+      s.setAcceleration(accel);
       rc.rotateAsync(s);
     }
 
@@ -87,6 +97,7 @@ class MotorAndSwitches
     // async
     void goto_pos(int32_t position) 
     {
+      stop_sw = (position < s.getPosition()) ? pin_sw1 : pin_sw2;
       s.setMaxSpeed(motor_speed);
       s.setAcceleration(motor_speed);
       s.setTargetAbs(position);
@@ -104,24 +115,24 @@ class MotorAndSwitches
     void home()
     {
       if (!sw1_hit()) {
-        rotate(false);
+        rotate(false, homing_speed, homing_accel);
         while (!sw1_hit());
       }
       s.setPosition(0);
-      stop();
+      stop(true);
     }
 
     // sync
     int32_t find_limit()
     {
-      stop();
+      stop(true);
       if (sw2_hit()) {
         return s.getPosition();
       }
-      rotate(true);
+      rotate(true, homing_speed, homing_accel);
       while (!sw2_hit());
       int32_t ret = s.getPosition();
-      stop();
+      stop(true);
       return ret;
     }
 
@@ -131,12 +142,12 @@ class MotorAndSwitches
         pending_goto = false;
         goto_pos(pending_pos);
       }
-      if (rc.isRunning()) {
-        if (sw1_hit() ){
+      if (rc.isRunning() || sc.isRunning()) {
+        if (stop_sw == pin_sw1 && sw1_hit() ){
           s.setPosition(0);
           stop(true);
         }
-        if (sw2_hit()) {
+        if (stop_sw == pin_sw2 && sw2_hit()) {
           stop(true);
         }
       }
@@ -152,7 +163,7 @@ class Door : public MotorAndSwitches
     Door(uint8_t pin_pulse, uint8_t pin_dir, uint8_t pin_sw1, uint8_t pin_sw2, RotateControl& rc)
       : MotorAndSwitches(pin_pulse, pin_dir, pin_sw1, pin_sw2, rc)
     {
-      calibrated = true;
+      calibrated = false;
       closed_pos = 0;
       motor_speed = DOOR_SPEED;
       motor_accel = DOOR_ACCEL;
@@ -160,8 +171,8 @@ class Door : public MotorAndSwitches
 
     void calibrate()
     {
-      //home();
-      closed_pos = 20000; //find_limit();
+      home();
+      closed_pos = find_limit();
       calibrated = true;
     }
 
@@ -228,7 +239,7 @@ class Floor : public MotorAndSwitches
     // blocking
     void calibrate()
     {
-      stop();
+      stop(true);
       home();
       calibrated = true;
     }

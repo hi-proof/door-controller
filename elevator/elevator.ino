@@ -6,6 +6,7 @@
 #include <SD.h>
 #include <Audio.h>
 #include <EEPROM.h>
+#include <FastLED.h>
 
 #include "parallelio.h"
 #include "state.h"
@@ -29,7 +30,7 @@ AudioPlayMemory          playDings;      //xy=256,229
 AudioMixer4              mixerTop;       //xy=516,310
 AudioMixer4              mixerBottom;    //xy=518,396
 AudioOutputI2S           i2s1;           //xy=704,312
-AudioOutputUSB           usb1;           //xy=704,384
+//AudioOutputUSB           usb1;           //xy=704,384
 AudioConnection          patchCord1(playBackground1, 0, mixerTop, 1);
 AudioConnection          patchCord2(playBackground1, 0, mixerBottom, 1);
 AudioConnection          patchCord3(playBackground2, 0, mixerTop, 2);
@@ -39,9 +40,9 @@ AudioConnection          patchCord6(playBackground3, 0, mixerTop, 3);
 AudioConnection          patchCord7(playDings, 0, mixerTop, 0);
 AudioConnection          patchCord8(playDings, 0, mixerBottom, 0);
 AudioConnection          patchCord9(mixerTop, 0, i2s1, 0);
-AudioConnection          patchCord10(mixerTop, 0, usb1, 0);
+//AudioConnection          patchCord10(mixerTop, 0, usb1, 0);
 AudioConnection          patchCord11(mixerBottom, 0, i2s1, 1);
-AudioConnection          patchCord12(mixerBottom, 0, usb1, 1);
+//AudioConnection          patchCord12(mixerBottom, 0, usb1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=528,191
 // GUItool: end automatically generated code
 
@@ -99,7 +100,7 @@ class Elevator
 
     Elevator(bool with_floor = false)
       : rc(25),
-        susan(34, 33, 35, 36, rc), // port A
+        susan(34, 33, 36, 35, rc), // port A
         d1(38, 37, 39, 32, rc),    // port B
         d2(30, 31, 28, 29, rc),    // port C
         with_floor(with_floor),
@@ -120,6 +121,7 @@ class Elevator
     }
 
     int32_t save_location(uint8_t location_id, int32_t position) {
+      shell_printf("Saving location %d at %d\r\n", location_id, position);
       positions[location_id] = position;
       EEPROM.put(location_id, position);
     }
@@ -135,11 +137,13 @@ class Elevator
 
     void set_mode(uint8_t new_mode) {
       shell_printf("Setting elevator mode to: %d\r\n", new_mode);
+      mode = new_mode;
       call_button_pressed = false;
       force_state_update = true;
       switch (new_mode) {
         case MODE_MAINTENANCE:
           susan.stop(true);
+          destination_id = 100;
           open();
           break;
 
@@ -159,10 +163,13 @@ class Elevator
     void calibrate()
     {
       shell_printf("Starting elevator calibration\r\n");
+      
       d1.calibrate();
-      d1.open();
+      d1.goto_pos(0);
+      
       d2.calibrate();
-      d2.open();
+      d2.goto_pos(0);
+      
       doors_state = DOOR_OPEN;
       if (with_floor) {
         shell_printf("Calibrating floor\r\n");
@@ -222,9 +229,11 @@ class Elevator
       this->destination_pos = positions[destination_id];
       this->origin_pos = susan.s.getPosition();
 
+      shell_printf("Going to destination id %d position %d (current position %d)\r\n", destination_id, destination_pos, origin_pos);
+
       this->goto_pending = true;
-      close();
       tx_msg(MSG_CLOSE, NULL, 0);
+      close();
     }
 
     void update()
@@ -273,14 +282,14 @@ Elevator elevator(false);
 
 void on_rx_button_event(event_button_t * evt)
 {
-  uint8_t event_id = evt->button & 0xF0 >> 4;
-  uint8_t button_id = evt->button & 0x0F;
-
-  shell_printf("Button event %d %d\r\n", button_id, event_id);
-
+  uint8_t event_id = (evt->button & 0xF0) >> 4;
+  uint8_t button_id = (evt->button & 0x0F);
+  
   switch (elevator.mode) {
     case MODE_NOT_CALIBRATED:
       if (button_id == BTN_BELL && event_id == BTN_HOLD) {
+        tx_msg(MSG_HOME, NULL, 0);
+        delay(50);
         elevator.calibrate();
       }
       break;
@@ -311,13 +320,13 @@ void on_rx_button_event(event_button_t * evt)
 
     case MODE_ONLINE:
       if (button_id == BTN_BELL && event_id == BTN_HOLD) {
-        if (evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_13 && evt->all_buttons & BTN_14) {
+        if ((evt->all_buttons & (1 << BTN_STAR)) && (evt->all_buttons & (1 << BTN_13)) && (evt->all_buttons & (1 << BTN_14))) {
           elevator.set_mode(MODE_MAINTENANCE);
         }
-        else if (evt->all_buttons & BTN_CLOSE && evt->all_buttons & BTN_OPEN) {
+        else if ((evt->all_buttons & (1 << BTN_CLOSE)) && (evt->all_buttons & (1 << BTN_OPEN))) {
           elevator.calibrate();
         }
-        else if (evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_OPEN) {
+        else if (evt->all_buttons & (1 << BTN_OPEN)) {
           elevator.set_mode(MODE_OFFLINE);
         }
       }
@@ -331,10 +340,20 @@ void on_rx_button_event(event_button_t * evt)
         elevator.goto_destination(LOCATION_14F);
       }
       if (button_id == BTN_OPEN && event_id == BTN_PRESS) {
-        elevator.open();
+        if (elevator.floor_state == FLOOR_STATIONARY) {
+          tx_msg(MSG_OPEN, NULL, 0);
+          if (elevator.destination_id == LOCATION_LOBBY) {
+            elevator.open();
+          }
+        }
       }
       if (button_id == BTN_CLOSE && event_id == BTN_PRESS) {
-        elevator.close();
+        if (elevator.floor_state == FLOOR_STATIONARY) {
+          tx_msg(MSG_CLOSE, NULL, 0);
+          if (elevator.destination_id == LOCATION_LOBBY) {
+            elevator.close();
+          }
+        }
       }
 
       break;
@@ -359,7 +378,6 @@ void on_rx_outer(const uint8_t* buffer, size_t size)
 
     case MSG_EVENT_BUTTON:
       on_rx_button_event((event_button_t *)&buffer[1]);
-      shell_printf("Button event: %d\r\n", buffer[1]);
       break;
 
     case MSG_EVENT_DOOR:
@@ -493,7 +511,6 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
 
 void on_rx(const uint8_t* buffer, size_t size)
 {
-  //  shell_printf("RX %d bytes\r\n", size);
   last_rx = millis();
   if (is_outer) {
     on_rx_outer(buffer, size);
@@ -516,12 +533,16 @@ void setup() {
 
   // USB serial for debug
   Serial.begin(9600);
-  while (!Serial);
+  //while (!Serial);
   shell_init(shell_reader, shell_writer, PSTR("Hi-Proof elevatormatic"));
 
   // LED indicator on teensy
   pinMode(13, OUTPUT);
   digitalWrite(13, HIGH);
+
+  pinMode(14, OUTPUT);
+  digitalWrite(14, HIGH);
+
 
   shell_register(command_info, PSTR("i"));
   shell_register(command_home, PSTR("home"));
@@ -529,26 +550,26 @@ void setup() {
   shell_register(command_open, PSTR("open"));
   shell_register(command_close, PSTR("close"));
 
-  AudioMemory(100);
-  shell_printf("Opening SD...");
-  if (!SD.begin(BUILTIN_SDCARD)) {
-    shell_printf("Error opening SD\r\n");
-  } else {
-    shell_printf("Done\r\n");
-  }
-
-  sgtl5000_1.enable();
-  sgtl5000_1.volume(1.0);
-
-  mixerTop.gain(0, 1.0);
-  mixerTop.gain(1, 1.0);
-  mixerTop.gain(2, 1.0);
-  mixerTop.gain(3, 1.0);
-
-  mixerBottom.gain(0, 1.0);
-  mixerBottom.gain(1, 1.0);
-  mixerBottom.gain(2, 1.0);
-  mixerBottom.gain(3, 1.0);
+//  AudioMemory(100);
+//  shell_printf("Opening SD...");
+//  if (!SD.begin(BUILTIN_SDCARD)) {
+//    shell_printf("Error opening SD\r\n");
+//  } else {
+//    shell_printf("Done\r\n");
+//  }
+//
+//  sgtl5000_1.enable();
+//  sgtl5000_1.volume(1.0);
+//
+//  mixerTop.gain(0, 1.0);
+//  mixerTop.gain(1, 1.0);
+//  mixerTop.gain(2, 1.0);
+//  mixerTop.gain(3, 1.0);
+//
+//  mixerBottom.gain(0, 1.0);
+//  mixerBottom.gain(1, 1.0);
+//  mixerBottom.gain(2, 1.0);
+//  mixerBottom.gain(3, 1.0);
 }
 
 // relative to motion length, so 1.0 is at motion's end
@@ -568,17 +589,17 @@ void process_outer()
   outer_state.system_mode = elevator.mode;
   outer_state.destination = elevator.destination_id;
   outer_state.flags = (
-    elevator.call_button_pressed << FLAG_CALL_BUTTON_PENDING |
-    elevator.goto_pending << FLAG_GOTO_PENDING);
+    (elevator.call_button_pressed << FLAG_CALL_BUTTON_PENDING) |
+    (elevator.goto_pending << FLAG_GOTO_PENDING));
 
   // call button held when we're not calibrated yet
-  if (panel.button_call.held && !elevator.calibrated()) {
+  if (panel.b1.held && !elevator.calibrated()) {
     tx_msg(MSG_HOME, NULL, 0);
     delay(50);
     elevator.calibrate();
   }
 
-  if (panel.button_call.clicked && elevator.mode == MODE_ONLINE) {
+  if (panel.b1.clicked && elevator.mode == MODE_ONLINE) {
     elevator.call_button_pressed = true;
   }
 
@@ -586,15 +607,10 @@ void process_outer()
     switch (elevator.destination_id) {
       case LOCATION_LOBBY:
         elevator.call_button_pressed = false;
-        tx_msg(MSG_OPEN, NULL, 0);
-        delay(50);
         elevator.open();
-        break;
+        // fallthrough
 
       case LOCATION_13F:
-        tx_msg(MSG_OPEN, NULL, 0);
-        break;
-
       case LOCATION_14F:
         tx_msg(MSG_OPEN, NULL, 0);
         break;
@@ -664,6 +680,11 @@ void process_inner()
   send_button_events(panel.b5);
   send_button_events(panel.b6);
 
+  analogWrite(16, beatsin8(20));
+  analogWrite(17, beatsin8(30));
+  analogWrite(20, beatsin8(25));
+  analogWrite(21, beatsin8(17));
+
   // turn off all floor buttons if not moving
 
   inner_state.door_state = elevator.doors_state;
@@ -676,6 +697,7 @@ void do_ui()
   switch (elevator.mode) {
     case MODE_NOT_CALIBRATED:
       sseg.set(SSeg::character('H'), 0);
+      break;
     
     case MODE_ONLINE:
       
@@ -684,53 +706,51 @@ void do_ui()
           case LOCATION_LOBBY: sseg.set(SSeg::digit(1), SSeg::digit(2)); break;
           case LOCATION_13F: sseg.set(SSeg::digit(1), SSeg::digit(3)); break; 
           case LOCATION_14F: sseg.set(SSeg::digit(1), SSeg::digit(4)); break;
+          default: sseg.set(SSeg::character('-'), SSeg::character('-'));
         }
       }
 
-      if (elevator.floor_state == FLOOR_STATIONARY || elevator.goto_pending) {
+      if (elevator.floor_state == FLOOR_MOVING || elevator.goto_pending) {
         switch (elevator.destination_id) {
-          case LOCATION_LOBBY: panel.button_star.on = (millis() / 700) % 2 == 0; break;
-          case LOCATION_13F: panel.button_13f.on = (millis() / 700) % 2 == 0; break;
-          case LOCATION_14F: panel.button_14f.on = (millis() / 700) % 2 == 0; break;
+          case LOCATION_LOBBY: panel.b1.on = (millis() / 700) % 2 == 0; break;
+          case LOCATION_13F: panel.b2.on = (millis() / 700) % 2 == 0; break;
+          case LOCATION_14F: panel.b3.on = (millis() / 700) % 2 == 0; break;
         }
       } else {
-        panel.button_star.on = false;
-        panel.button_13f.on = false;
-        panel.button_14f.on = false;
+        panel.b1.on = false;
+        panel.b2.on = false;
+        panel.b3.on = false;
       }
 
       // special case - blink the outside call button and let the inside of the elevator know
       // lobby is waiting
       if (elevator.call_button_pressed) {
-        if (is_outer) {
-          panel.button_call.on = (millis() / 700) % 2 == 0;
-        } else {
-          panel.button_star.on = (millis() / 700) % 2 == 0;
-        }
+        panel.b1.on = (millis() / 700) % 2 == 0;
       }
 
-      panel.button_open.on = false;
-      panel.button_close.on = false;
+      panel.b5.on = false;
+      panel.b6.on = false;
        
       break;
 
     case MODE_MAINTENANCE:
       sseg.set(SSeg::character('-'), SSeg::character('-'));
-      panel.button_star.on = false;
-      panel.button_13f.on = false;
-      panel.button_14f.on = false;
-      panel.button_open.on = true;
-      panel.button_close.on = true;
-      panel.button_bell.on = (millis() / 700) % 2 == 0;
+      panel.b1.on = false;
+      panel.b2.on = false;
+      panel.b3.on = false;
+      panel.b5.on = true;
+      panel.b6.on = true;
+      panel.b4.on = (millis() / 700) % 2 == 0;
       break;
     
-    case MODE_OFFLINE:break;
-      panel.button_star.on = (millis() / 700) % 2 == 0;
-      panel.button_13f.on = (millis() / 1300) % 2 == 0;
-      panel.button_14f.on = (millis() / 500) % 2 == 0;
-      panel.button_open.on = (millis() / 1700) % 2 == 0;
-      panel.button_close.on = (millis() / 950) % 2 == 0;
-      panel.button_bell.on = (millis() / 1100) % 2 == 0;
+    case MODE_OFFLINE:
+      panel.b1.on = (millis() / 700) % 2 == 0;
+      panel.b2.on = (millis() / 1300) % 2 == 0;
+      panel.b3.on = (millis() / 500) % 2 == 0;
+      panel.b5.on = (millis() / 1700) % 2 == 0;
+      panel.b6.on = (millis() / 950) % 2 == 0;
+      panel.b4.on = (millis() / 1100) % 2 == 0;
+      break;
   }
 }
 
@@ -751,21 +771,16 @@ void loop() {
   }
 
   //UI
+  do_ui();
   
-  if (!elevator.calibrated()) {
-    sseg.set(SSeg::character('H'), 0);
-  } else {
-    sseg.set(SSeg::character('-'), SSeg::character('-'));
-  }
-
   // update outputs
   button_leds.update();
   sseg.update();
 
   //  // send state if enough time passed
-  if ((millis() - last_tx > 1000) || elevator.force_state_update) {
-  //command_info(0, NULL);
-  if (is_outer) {
+  if ((millis() - last_tx > 2000) || elevator.force_state_update) {
+    //command_info(0, NULL);
+    if (is_outer) {
       tx_msg(MSG_OUTER_STATE, (uint8_t*)&outer_state, sizeof(outer_state));
     } else {
       tx_msg(MSG_INNER_STATE, (uint8_t*)&inner_state, sizeof(inner_state));
@@ -780,13 +795,15 @@ void loop() {
 int command_info(int argc, char ** argv)
 {
   bool outer = digitalRead(15) == HIGH;
-  //shell_printf("Board id: %s\r\n", outer ? "OUTER" : "INNER");
+  shell_printf("Board id: %s\r\n", outer ? "OUTER" : "INNER");
   shell_printf("F: %d %d %s   D1: %d %s   D2: %d %s  D: %d\r\n",
                elevator.floor_state,
                elevator.susan.s.getPosition(), elevator.susan.sc.isRunning() ? "RUNNING" : "IDLE",
                elevator.d1.s.getPosition(), elevator.d1.sc.isRunning() ? "RUNNING" : "IDLE",
                elevator.d2.s.getPosition(), elevator.d2.sc.isRunning() ? "RUNNING" : "IDLE",
                elevator.doors_state);
+  shell_printf("F SW1: %d  S2: %d\r\n", 
+    elevator.susan.sw1_hit(),  elevator.susan.sw2_hit());
   return SHELL_RET_SUCCESS;
 }
 
@@ -811,11 +828,13 @@ int command_home(int argc, char ** argv)
 
 int command_test(int argc, char ** argv)
 {
+  elevator.susan.rotate(true);
+  delay(1000);
   //playBackground1.play("LEVEL0.RAW");
   //elevator.goto_destination(LOCATION_13F);
   // test ding
-  uint8_t msg = MSG_DING;
-  on_rx_inner(&msg, sizeof(msg));
+//  uint8_t msg = MSG_DING;
+//  on_rx_inner(&msg, sizeof(msg));
   // test audio transitions
   //  static int index = 0;
   //  transitions.start_transition(index % 3);
