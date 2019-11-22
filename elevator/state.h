@@ -69,6 +69,11 @@ enum {
   BTN_HOLD,
 };
 
+enum {
+  FLAG_CALL_BUTTON_PENDING,
+  FLAG_GOTO_PENDING,
+};
+
 #pragma pack(push, 1)
 
 typedef struct {
@@ -81,7 +86,7 @@ typedef struct {
   uint8_t floor_state;
   uint8_t door_state;
   uint8_t destination;
-  uint8_t call_button_pressed;
+  uint8_t flags;
 } outer_state_t;
 
 typedef struct {

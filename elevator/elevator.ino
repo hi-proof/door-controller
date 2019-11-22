@@ -93,8 +93,9 @@ class Elevator
     bool goto_pending;
     bool just_arrived;
     bool just_started;
-    bool just_opened_closed;
     bool call_button_pressed;
+
+    bool force_state_update;
 
     Elevator(bool with_floor = false)
       : rc(25),
@@ -135,6 +136,7 @@ class Elevator
     void set_mode(uint8_t new_mode) {
       shell_printf("Setting elevator mode to: %d\r\n", new_mode);
       call_button_pressed = false;
+      force_state_update = true;
       switch (new_mode) {
         case MODE_MAINTENANCE:
           susan.stop(true);
@@ -230,21 +232,20 @@ class Elevator
       d1.update();
       d2.update();
       susan.update();
-      just_opened_closed = false;
+      force_state_update = false;
       if (doors_state == DOOR_OPENING) {
         if (!d1.sc.isRunning() & !d2.sc.isRunning()) {
           doors_state = DOOR_OPEN;
-          just_opened_closed = true;
+          force_state_update = true;
         }
       }
 
       if (doors_state == DOOR_CLOSING) {
         if (!d1.sc.isRunning() & !d2.sc.isRunning()) {
           doors_state = DOOR_CLOSED;
-          just_opened_closed = true;
+          force_state_update = true;
         }
       }
-
 
       just_arrived = false;
       just_started = false;
@@ -279,7 +280,9 @@ void on_rx_button_event(event_button_t * evt)
 
   switch (elevator.mode) {
     case MODE_NOT_CALIBRATED:
-
+      if (button_id == BTN_BELL && event_id == BTN_HOLD) {
+        elevator.calibrate();
+      }
       break;
 
     case MODE_MAINTENANCE:
@@ -327,6 +330,13 @@ void on_rx_button_event(event_button_t * evt)
       if (button_id == BTN_14 && event_id == BTN_CLICK) {
         elevator.goto_destination(LOCATION_14F);
       }
+      if (button_id == BTN_OPEN && event_id == BTN_PRESS) {
+        elevator.open();
+      }
+      if (button_id == BTN_CLOSE && event_id == BTN_PRESS) {
+        elevator.close();
+      }
+
       break;
 
     case MODE_OFFLINE:
@@ -337,33 +347,6 @@ void on_rx_button_event(event_button_t * evt)
       }
       break;
 
-  }
-  //
-  //  if (button_id == BTN_BELL && event_id == BTN_HOLD &&
-
-  if (button_id == BTN_BELL) {
-    if (event_id == BTN_HOLD && evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_13 && evt->all_buttons & BTN_14) {
-      elevator.mode = MODE_MAINTENANCE;
-      //      if (!elevator.homing_done) {
-      //          tx_msg(MSG_HOME, NULL, 0);
-      //          delay(100);
-      //          // blocking
-      //          elevator.home_doors();
-      //          elevator.home_floor();
-      //      }
-    }
-  }
-
-  if (button_id == BTN_OPEN && event_id == BTN_PRESS) {
-    tx_msg(MSG_OPEN, NULL, 0);
-    delay(50);
-    elevator.open();
-  }
-
-  if (button_id == BTN_CLOSE && event_id == BTN_PRESS) {
-    tx_msg(MSG_CLOSE, NULL, 0);
-    delay(50);
-    elevator.close();
   }
 }
 
@@ -468,7 +451,15 @@ Transitions transitions;
 void on_rx_inner(const uint8_t* buffer, size_t size)
 {
   switch (buffer[0]) {
-    case MSG_OUTER_STATE: break;
+    case MSG_OUTER_STATE: {
+        outer_state_t * new_state = (outer_state_t *)&buffer[1];
+        elevator.mode = new_state->system_mode;
+        elevator.call_button_pressed = new_state->flags & (1 << FLAG_CALL_BUTTON_PENDING);
+        elevator.goto_pending = new_state->flags & (1 << FLAG_GOTO_PENDING);
+        elevator.destination_id = new_state->destination;
+        elevator.floor_state = new_state->floor_state;
+      }
+      break;
     case MSG_OPEN:
       elevator.open();
       break;
@@ -479,7 +470,7 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
 
     case MSG_HOME:
       // blocking
-      //elevator.home_doors();
+      elevator.calibrate();
       break;
 
     case MSG_UI_OVERRIDE: break;
@@ -576,7 +567,9 @@ void process_outer()
   outer_state.floor_state = elevator.floor_state;
   outer_state.system_mode = elevator.mode;
   outer_state.destination = elevator.destination_id;
-  outer_state.call_button_pressed = elevator.call_button_pressed;
+  outer_state.flags = (
+    elevator.call_button_pressed << FLAG_CALL_BUTTON_PENDING |
+    elevator.goto_pending << FLAG_GOTO_PENDING);
 
   // call button held when we're not calibrated yet
   if (panel.button_call.held && !elevator.calibrated()) {
@@ -671,9 +664,74 @@ void process_inner()
   send_button_events(panel.b5);
   send_button_events(panel.b6);
 
+  // turn off all floor buttons if not moving
+
   inner_state.door_state = elevator.doors_state;
   // audio
   transitions.update();
+}
+
+void do_ui()
+{
+  switch (elevator.mode) {
+    case MODE_NOT_CALIBRATED:
+      sseg.set(SSeg::character('H'), 0);
+    
+    case MODE_ONLINE:
+      
+      if (elevator.floor_state == FLOOR_STATIONARY) {
+        switch (elevator.destination_id) {
+          case LOCATION_LOBBY: sseg.set(SSeg::digit(1), SSeg::digit(2)); break;
+          case LOCATION_13F: sseg.set(SSeg::digit(1), SSeg::digit(3)); break; 
+          case LOCATION_14F: sseg.set(SSeg::digit(1), SSeg::digit(4)); break;
+        }
+      }
+
+      if (elevator.floor_state == FLOOR_STATIONARY || elevator.goto_pending) {
+        switch (elevator.destination_id) {
+          case LOCATION_LOBBY: panel.button_star.on = (millis() / 700) % 2 == 0; break;
+          case LOCATION_13F: panel.button_13f.on = (millis() / 700) % 2 == 0; break;
+          case LOCATION_14F: panel.button_14f.on = (millis() / 700) % 2 == 0; break;
+        }
+      } else {
+        panel.button_star.on = false;
+        panel.button_13f.on = false;
+        panel.button_14f.on = false;
+      }
+
+      // special case - blink the outside call button and let the inside of the elevator know
+      // lobby is waiting
+      if (elevator.call_button_pressed) {
+        if (is_outer) {
+          panel.button_call.on = (millis() / 700) % 2 == 0;
+        } else {
+          panel.button_star.on = (millis() / 700) % 2 == 0;
+        }
+      }
+
+      panel.button_open.on = false;
+      panel.button_close.on = false;
+       
+      break;
+
+    case MODE_MAINTENANCE:
+      sseg.set(SSeg::character('-'), SSeg::character('-'));
+      panel.button_star.on = false;
+      panel.button_13f.on = false;
+      panel.button_14f.on = false;
+      panel.button_open.on = true;
+      panel.button_close.on = true;
+      panel.button_bell.on = (millis() / 700) % 2 == 0;
+      break;
+    
+    case MODE_OFFLINE:break;
+      panel.button_star.on = (millis() / 700) % 2 == 0;
+      panel.button_13f.on = (millis() / 1300) % 2 == 0;
+      panel.button_14f.on = (millis() / 500) % 2 == 0;
+      panel.button_open.on = (millis() / 1700) % 2 == 0;
+      panel.button_close.on = (millis() / 950) % 2 == 0;
+      panel.button_bell.on = (millis() / 1100) % 2 == 0;
+  }
 }
 
 void loop() {
@@ -693,6 +751,7 @@ void loop() {
   }
 
   //UI
+  
   if (!elevator.calibrated()) {
     sseg.set(SSeg::character('H'), 0);
   } else {
@@ -704,7 +763,7 @@ void loop() {
   sseg.update();
 
   //  // send state if enough time passed
-  if ((millis() - last_tx > 1000) || (!is_outer && elevator.just_opened_closed)) {
+  if ((millis() - last_tx > 1000) || elevator.force_state_update) {
   //command_info(0, NULL);
   if (is_outer) {
       tx_msg(MSG_OUTER_STATE, (uint8_t*)&outer_state, sizeof(outer_state));
