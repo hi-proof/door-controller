@@ -58,6 +58,13 @@ class Elevator
 
     uint8_t doors_state;
 
+    uint8_t floor_state;
+    uint8_t destination_id;
+    int32_t destination_pos;
+    int32_t origin_pos;
+
+    int32_t positions[LOCATION_COUNT];
+
     Elevator(bool with_floor=false)
     : rc(25),
       susan(34, 33, 35, 36, rc), // port A
@@ -65,7 +72,12 @@ class Elevator
       d2(30, 31, 28, 29, rc),    // port C
       with_floor(with_floor),
       doors_state(DOOR_NOT_CALIBRATED)
-    {}
+    {
+      // TODO: Load locations from EEPROM
+      positions[LOCATION_LOBBY] = 0;
+      positions[LOCATION_13F] = 30000;  
+      positions[LOCATION_14F] = 60000;  
+    }
 
     bool calibrated()
     {
@@ -73,7 +85,7 @@ class Elevator
       if (with_floor) {
         ret &= susan.calibrated;
       }
-      return ret;     
+      return ret;
     }
 
     // hella blocking
@@ -87,6 +99,10 @@ class Elevator
       doors_state = DOOR_OPEN;
       if (with_floor) {
         susan.calibrate();
+        floor_state = FLOOR_STATIONARY;
+        destination_id = LOCATION_LOBBY;
+        destination_pos = 0;
+        origin_pos = 0;
       }
       
       shell_printf("Elevator calibrated\r\n");
@@ -120,6 +136,25 @@ class Elevator
 
     void close() {
       doors(false);
+    }
+
+    void goto_destination(uint8_t destination_id) {
+      // for now - ignore we aren't stationary
+      if (floor_state != FLOOR_STATIONARY) {
+        shell_printf("Wait for elevator to stop before moving\r\n");
+        return;
+      }
+
+      // already there?
+      if (destination_id == this->destination_id) {
+        return;
+      }
+
+      this->destination_id = destination_id;
+      this->destination_pos = positions[destination_id];
+      this->origin_pos = susan.s.getPosition();
+      floor_state = FLOOR_MOVING;
+      susan.goto_pos(destination_pos);
     }
 
     void update() 
@@ -312,6 +347,13 @@ void process_outer()
     tx_msg(MSG_HOME, NULL, 0);
     delay(50);
     elevator.calibrate();
+  }
+
+  // elevator position handling for ambiance changes
+  if (elevator.floor_state == FLOOR_MOVING) {
+    int32_t current_position = elevator.susan.s.getPosition();
+    // dest is elevator.destination_pos
+    // origin is elevator.origin_pos
   }
 }
 

@@ -39,7 +39,9 @@ enum {
 enum {
   LOCATION_LOBBY,
   LOCATION_13F,
-  LOCATION_14F
+  LOCATION_14F,
+  //----------
+  LOCATION_COUNT,
 };
 
 enum {

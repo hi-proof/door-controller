@@ -143,7 +143,7 @@ class Door : public MotorAndSwitches
     Door(uint8_t pin_pulse, uint8_t pin_dir, uint8_t pin_sw1, uint8_t pin_sw2, RotateControl& rc)
       : MotorAndSwitches(pin_pulse, pin_dir, pin_sw1, pin_sw2, rc)
     {
-      calibrated = false;
+      calibrated = true;
       closed_pos = 0;
       motor_speed = DOOR_SPEED;
       motor_accel = DOOR_ACCEL;
