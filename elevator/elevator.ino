@@ -10,6 +10,7 @@
 #include "parallelio.h"
 #include "state.h"
 #include "controllers.h"
+#include "AudioSampleDing.h"
 
 //--------------------------------------------------------------------------
 
@@ -482,6 +483,10 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
       // start transition to target floor
       transitions.start_transition(buffer[1]);
       break;
+
+    case MSG_DING:
+      playDings.play(AudioSampleDing);
+      break;
   } 
 }
 
@@ -583,23 +588,20 @@ void process_outer()
     switch (elevator.destination_id) {
       case LOCATION_LOBBY:
         elevator.call_button_pressed = false;
-        //tx_msg(ding);
         tx_msg(MSG_OPEN, NULL, 0);
         delay(50);
         elevator.open();
         break;
 
       case LOCATION_13F:
-        //tx_msg(ding);
-        elevator.open();
+        tx_msg(MSG_OPEN, NULL, 0);
         break;
         
       case LOCATION_14F:
-        //tx_msg(ding);
-        elevator.open();
+        tx_msg(MSG_OPEN, NULL, 0);
         break;
-      
     }
+    tx_msg(MSG_DING, NULL, 0);
     shell_printf("Just arrived at location ID: %d, should play ding now\r\n", elevator.destination_id);
   }
 
@@ -747,9 +749,14 @@ int command_test(int argc, char ** argv)
 {
   //playBackground1.play("LEVEL0.RAW");
   //elevator.goto_destination(LOCATION_13F);
-  static int index = 0;
-  transitions.start_transition(index % 3);
-  index++;
+  // test ding
+  uint8_t msg = MSG_DING;
+  on_rx_inner(&msg, sizeof(msg));
+  // test audio transitions
+//  static int index = 0;
+//  transitions.start_transition(index % 3);
+//  index++;
+  // test transition detection
 //  switch(index){
 //    case 0:
 //      elevator.goto_destination(LOCATION_13F);

@@ -35,6 +35,7 @@ enum {
   MSG_CLOSE,
   MSG_UI_OVERRIDE,
   MSG_TRIGGER_TRANSITION,
+  MSG_DING,
 };
 
 enum {
