@@ -83,7 +83,7 @@ class Elevator
     uint8_t mode;
     uint8_t doors_state;
     uint8_t floor_state;
-    
+
     uint8_t destination_id;
     int32_t destination_pos;
     int32_t origin_pos;
@@ -93,18 +93,19 @@ class Elevator
     bool goto_pending;
     bool just_arrived;
     bool just_started;
+    bool just_opened_closed;
     bool call_button_pressed;
 
-    Elevator(bool with_floor=false)
-    : rc(25),
-      susan(34, 33, 35, 36, rc), // port A
-      d1(38, 37, 39, 32, rc),    // port B
-      d2(30, 31, 28, 29, rc),    // port C
-      with_floor(with_floor),
-      doors_state(DOOR_NOT_CALIBRATED),
-      mode(MODE_NOT_CALIBRATED),
-      floor_state(FLOOR_NOT_CALIBRATED), 
-      call_button_pressed(false)
+    Elevator(bool with_floor = false)
+      : rc(25),
+        susan(34, 33, 35, 36, rc), // port A
+        d1(38, 37, 39, 32, rc),    // port B
+        d2(30, 31, 28, 29, rc),    // port C
+        with_floor(with_floor),
+        doors_state(DOOR_NOT_CALIBRATED),
+        mode(MODE_NOT_CALIBRATED),
+        floor_state(FLOOR_NOT_CALIBRATED),
+        call_button_pressed(false)
     {
       positions[LOCATION_LOBBY] = load_location(LOCATION_LOBBY);
       positions[LOCATION_13F] = load_location(LOCATION_13F);
@@ -183,7 +184,7 @@ class Elevator
       if (open && doors_state == DOOR_OPENING || !open && doors_state == DOOR_CLOSING) {
         return;
       }
-      
+
       if (open) {
         doors_state = DOOR_OPENING;
         d1.open();
@@ -224,30 +225,32 @@ class Elevator
       tx_msg(MSG_CLOSE, NULL, 0);
     }
 
-    void update() 
+    void update()
     {
       d1.update();
       d2.update();
       susan.update();
+      just_opened_closed = false;
       if (doors_state == DOOR_OPENING) {
         if (!d1.sc.isRunning() & !d2.sc.isRunning()) {
           doors_state = DOOR_OPEN;
+          just_opened_closed = true;
         }
       }
 
       if (doors_state == DOOR_CLOSING) {
         if (!d1.sc.isRunning() & !d2.sc.isRunning()) {
           doors_state = DOOR_CLOSED;
+          just_opened_closed = true;
         }
       }
 
-      
+
       just_arrived = false;
       just_started = false;
-      
-      if (floor_state == FLOOR_STATIONARY && mode == MODE_ONLINE && goto_pending) { 
-        // TODO: check for inner door state too
-        if (doors_state == DOOR_CLOSED) {
+
+      if (floor_state == FLOOR_STATIONARY && mode == MODE_ONLINE && goto_pending) {
+        if ((doors_state == DOOR_CLOSED) && (inner_state.door_state == DOOR_CLOSED)) {
           floor_state = FLOOR_MOVING;
           susan.goto_pos(destination_pos);
           goto_pending = false;
@@ -276,9 +279,9 @@ void on_rx_button_event(event_button_t * evt)
 
   switch (elevator.mode) {
     case MODE_NOT_CALIBRATED:
-    
+
       break;
-      
+
     case MODE_MAINTENANCE:
       if (button_id == BTN_BELL && event_id == BTN_HOLD) {
         elevator.set_mode(MODE_ONLINE);
@@ -331,23 +334,23 @@ void on_rx_button_event(event_button_t * evt)
         if (evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_OPEN) {
           elevator.set_mode(MODE_ONLINE);
         }
-      }      
+      }
       break;
-    
+
   }
-//
-//  if (button_id == BTN_BELL && event_id == BTN_HOLD && 
+  //
+  //  if (button_id == BTN_BELL && event_id == BTN_HOLD &&
 
   if (button_id == BTN_BELL) {
     if (event_id == BTN_HOLD && evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_13 && evt->all_buttons & BTN_14) {
       elevator.mode = MODE_MAINTENANCE;
-//      if (!elevator.homing_done) {
-//          tx_msg(MSG_HOME, NULL, 0);
-//          delay(100);
-//          // blocking
-//          elevator.home_doors();
-//          elevator.home_floor();
-//      }
+      //      if (!elevator.homing_done) {
+      //          tx_msg(MSG_HOME, NULL, 0);
+      //          delay(100);
+      //          // blocking
+      //          elevator.home_doors();
+      //          elevator.home_floor();
+      //      }
     }
   }
 
@@ -370,17 +373,17 @@ void on_rx_outer(const uint8_t* buffer, size_t size)
     case MSG_INNER_STATE:
       memcpy(&inner_state, &buffer[1], sizeof(inner_state));
       break;
-      
+
     case MSG_EVENT_BUTTON:
       on_rx_button_event((event_button_t *)&buffer[1]);
       shell_printf("Button event: %d\r\n", buffer[1]);
       break;
-    
+
     case MSG_EVENT_DOOR:
       // door state changed. do somtin about it
-      
+
       break;
-  } 
+  }
 }
 
 
@@ -402,8 +405,10 @@ struct Transitions {
   int32_t duration;
 
   Transitions() :
-    source_volumes({0}), dest_volumes({1,0,0}), start_time(0), duration(1) {
-      
+    source_volumes( {
+    0
+  }), dest_volumes({1, 0, 0}), start_time(0), duration(1) {
+
   }
 
   void start_transition(uint8_t target_floor) {
@@ -411,7 +416,7 @@ struct Transitions {
     memcpy(source_volumes, background_volumes, sizeof(source_volumes));
     memset(dest_volumes, 0, sizeof(dest_volumes));
     dest_volumes[target_floor] = 1.;
-    
+
     start_time = millis();
     // TODO: vary according to target/source
     duration = 3000;
@@ -420,22 +425,22 @@ struct Transitions {
   void update() {
     float relative_time = (millis() - start_time) / (float)duration;
     if ((relative_time >= 0) && (relative_time <= 1.)) {
-      for(int i = 0; i < NUM_BACKGROUND_TRACKS; i++) {
+      for (int i = 0; i < NUM_BACKGROUND_TRACKS; i++) {
         background_volumes[i] = lerp(source_volumes[i], dest_volumes[i], relative_time);
       }
-//      shell_printf("rel time: %d, bv: %d %d %d\r\n",
-//                    (int)(relative_time * 100),
-//                    (int)(background_volumes[0]*100),
-//                    (int)(background_volumes[1]*100),
-//                    (int)(background_volumes[2]*100));
+      //      shell_printf("rel time: %d, bv: %d %d %d\r\n",
+      //                    (int)(relative_time * 100),
+      //                    (int)(background_volumes[0]*100),
+      //                    (int)(background_volumes[1]*100),
+      //                    (int)(background_volumes[2]*100));
     } else {
       memcpy(background_volumes, dest_volumes, sizeof(background_volumes));
     }
 
     for (int i = 0; i < NUM_BACKGROUND_TRACKS; i++) {
       // TODO: up/down motion via panning between top and bottom
-      mixerTop.gain(i+1, background_volumes[i]);
-      mixerBottom.gain(i+1, background_volumes[i]);
+      mixerTop.gain(i + 1, background_volumes[i]);
+      mixerBottom.gain(i + 1, background_volumes[i]);
     }
 
     if (background_volumes[0] > 0.02 && !playBackground1.isPlaying()) {
@@ -464,19 +469,19 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
 {
   switch (buffer[0]) {
     case MSG_OUTER_STATE: break;
-    case MSG_OPEN: 
+    case MSG_OPEN:
       elevator.open();
       break;
-      
-    case MSG_CLOSE: 
+
+    case MSG_CLOSE:
       elevator.close();
       break;
-      
+
     case MSG_HOME:
       // blocking
       //elevator.home_doors();
       break;
-      
+
     case MSG_UI_OVERRIDE: break;
 
     case MSG_TRIGGER_TRANSITION:
@@ -487,7 +492,7 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
     case MSG_DING:
       playDings.play(AudioSampleDing);
       break;
-  } 
+  }
 }
 
 
@@ -497,7 +502,7 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
 
 void on_rx(const uint8_t* buffer, size_t size)
 {
-//  shell_printf("RX %d bytes\r\n", size);
+  //  shell_printf("RX %d bytes\r\n", size);
   last_rx = millis();
   if (is_outer) {
     on_rx_outer(buffer, size);
@@ -510,7 +515,7 @@ void setup() {
   // board id
   pinMode(15, INPUT);
   is_outer = digitalRead(15) == HIGH;
-  
+
   elevator.with_floor = is_outer;
 
   // b2b comms
@@ -522,11 +527,11 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
   shell_init(shell_reader, shell_writer, PSTR("Hi-Proof elevatormatic"));
- 
+
   // LED indicator on teensy
   pinMode(13, OUTPUT);
   digitalWrite(13, HIGH);
-    
+
   shell_register(command_info, PSTR("i"));
   shell_register(command_home, PSTR("home"));
   shell_register(command_test, PSTR("test"));
@@ -565,14 +570,14 @@ float transition_positions[LOCATION_COUNT] = {
 // TODO: reset on MSG_HOME
 uint8_t transition_target = LOCATION_LOBBY;
 
-void process_outer() 
+void process_outer()
 {
   outer_state.door_state = elevator.doors_state;
   outer_state.floor_state = elevator.floor_state;
   outer_state.system_mode = elevator.mode;
   outer_state.destination = elevator.destination_id;
   outer_state.call_button_pressed = elevator.call_button_pressed;
-  
+
   // call button held when we're not calibrated yet
   if (panel.button_call.held && !elevator.calibrated()) {
     tx_msg(MSG_HOME, NULL, 0);
@@ -596,7 +601,7 @@ void process_outer()
       case LOCATION_13F:
         tx_msg(MSG_OPEN, NULL, 0);
         break;
-        
+
       case LOCATION_14F:
         tx_msg(MSG_OPEN, NULL, 0);
         break;
@@ -618,10 +623,10 @@ void process_outer()
       // check if we crossed the trigger point
       if (relative_position > transition_positions[destination_floor]) {
         shell_printf("Triggered transition to %d, position %d, origin %d, relative: %d\r\n",
-                    elevator.destination_id,
-                    current_position,
-                    elevator.origin_pos,
-                    (int)(relative_position*100));
+                     elevator.destination_id,
+                     current_position,
+                     elevator.origin_pos,
+                     (int)(relative_position * 100));
         // mark triggered
         transition_target = destination_floor;
         // inform the inside part of the trigger
@@ -641,22 +646,22 @@ void send_button_events(FancyButton& b) {
   if (b.pressed) {
     button_event.button = b.button_id | (BTN_PRESS << 4);
     tx_msg(MSG_EVENT_BUTTON, (uint8_t*)&button_event, sizeof(button_event));
-  }  
+  }
   if (b.released) {
     button_event.button = b.button_id | (BTN_RELEASE << 4);
     tx_msg(MSG_EVENT_BUTTON, (uint8_t*)&button_event, sizeof(button_event));
-  }  
+  }
   if (b.clicked) {
-    button_event.button = b.button_id | (BTN_CLICK<< 4);
+    button_event.button = b.button_id | (BTN_CLICK << 4);
     tx_msg(MSG_EVENT_BUTTON, (uint8_t*)&button_event, sizeof(button_event));
-  }  
+  }
   if (b.held) {
     button_event.button = b.button_id | (BTN_HOLD << 4);
     tx_msg(MSG_EVENT_BUTTON, (uint8_t*)&button_event, sizeof(button_event));
-  }  
+  }
 }
 
-void process_inner() 
+void process_inner()
 {
   // send key press events
   send_button_events(panel.b1);
@@ -676,11 +681,11 @@ void loop() {
   buttons.update();
   b2b_comms.update();
   panel.update();
-  
+
   // process
   shell_task();
   elevator.update();
-  
+
   if (is_outer) {
     process_outer();
   } else {
@@ -698,10 +703,10 @@ void loop() {
   button_leds.update();
   sseg.update();
 
-//  // send state if enough time passed
-  if (millis() - last_tx > 1000) {
-    //command_info(0, NULL);
-    if (is_outer) {
+  //  // send state if enough time passed
+  if ((millis() - last_tx > 1000) || (!is_outer && elevator.just_opened_closed)) {
+  //command_info(0, NULL);
+  if (is_outer) {
       tx_msg(MSG_OUTER_STATE, (uint8_t*)&outer_state, sizeof(outer_state));
     } else {
       tx_msg(MSG_INNER_STATE, (uint8_t*)&inner_state, sizeof(inner_state));
@@ -717,12 +722,12 @@ int command_info(int argc, char ** argv)
 {
   bool outer = digitalRead(15) == HIGH;
   //shell_printf("Board id: %s\r\n", outer ? "OUTER" : "INNER");
-  shell_printf("F: %d %d %s   D1: %d %s   D2: %d %s  D: %d\r\n",  
-    elevator.floor_state,
-    elevator.susan.s.getPosition(), elevator.susan.sc.isRunning() ? "RUNNING" : "IDLE",
-    elevator.d1.s.getPosition(), elevator.d1.sc.isRunning() ? "RUNNING" : "IDLE",
-    elevator.d2.s.getPosition(), elevator.d2.sc.isRunning() ? "RUNNING" : "IDLE",
-    elevator.doors_state);
+  shell_printf("F: %d %d %s   D1: %d %s   D2: %d %s  D: %d\r\n",
+               elevator.floor_state,
+               elevator.susan.s.getPosition(), elevator.susan.sc.isRunning() ? "RUNNING" : "IDLE",
+               elevator.d1.s.getPosition(), elevator.d1.sc.isRunning() ? "RUNNING" : "IDLE",
+               elevator.d2.s.getPosition(), elevator.d2.sc.isRunning() ? "RUNNING" : "IDLE",
+               elevator.doors_state);
   return SHELL_RET_SUCCESS;
 }
 
@@ -753,43 +758,43 @@ int command_test(int argc, char ** argv)
   uint8_t msg = MSG_DING;
   on_rx_inner(&msg, sizeof(msg));
   // test audio transitions
-//  static int index = 0;
-//  transitions.start_transition(index % 3);
-//  index++;
+  //  static int index = 0;
+  //  transitions.start_transition(index % 3);
+  //  index++;
   // test transition detection
-//  switch(index){
-//    case 0:
-//      elevator.goto_destination(LOCATION_13F);
-//      break;
-//    case 1:
-//      elevator.goto_destination(LOCATION_14F);
-//      break;
-//    case 2:
-//      elevator.goto_destination(LOCATION_13F);
-//      break;
-//    case 3:
-//      elevator.goto_destination(LOCATION_LOBBY);
-//      break;
-//    case 4:
-//      elevator.goto_destination(LOCATION_14F);
-//      break;
-//    case 5:
-//      elevator.goto_destination(LOCATION_LOBBY);
-//      break;
-//  }
-//  index = (index + 1) % 6;
+  //  switch(index){
+  //    case 0:
+  //      elevator.goto_destination(LOCATION_13F);
+  //      break;
+  //    case 1:
+  //      elevator.goto_destination(LOCATION_14F);
+  //      break;
+  //    case 2:
+  //      elevator.goto_destination(LOCATION_13F);
+  //      break;
+  //    case 3:
+  //      elevator.goto_destination(LOCATION_LOBBY);
+  //      break;
+  //    case 4:
+  //      elevator.goto_destination(LOCATION_14F);
+  //      break;
+  //    case 5:
+  //      elevator.goto_destination(LOCATION_LOBBY);
+  //      break;
+  //  }
+  //  index = (index + 1) % 6;
 
-  
+
   //playBackground.play("LEVEL0.RAW");
-//  elevator.calibrate();
-//  elevator.susan.rotate(true);
-  
-//elevator.susan.rotate(true);
-//  delay(1000);
-//  elevator.susan.stop();
-//  elevator.susan.rotate(false);
-//  delay(1000);
-//  elevator.susan.stop();
+  //  elevator.calibrate();
+  //  elevator.susan.rotate(true);
+
+  //elevator.susan.rotate(true);
+  //  delay(1000);
+  //  elevator.susan.stop();
+  //  elevator.susan.rotate(false);
+  //  delay(1000);
+  //  elevator.susan.stop();
   return SHELL_RET_SUCCESS;
 }
 
