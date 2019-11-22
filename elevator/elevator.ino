@@ -5,6 +5,7 @@
 #include <FastLED.h>
 #include <SD.h>
 #include <Audio.h>
+#include <EEPROM.h>
 
 #include "parallelio.h"
 #include "state.h"
@@ -56,6 +57,8 @@ class Elevator
     bool with_floor;
     RotateControl rc;
 
+    uint8_t mode;
+
     uint8_t doors_state;
 
     uint8_t floor_state;
@@ -73,10 +76,19 @@ class Elevator
       with_floor(with_floor),
       doors_state(DOOR_NOT_CALIBRATED)
     {
-      // TODO: Load locations from EEPROM
-      positions[LOCATION_LOBBY] = 0;
-      positions[LOCATION_13F] = 30000;  
-      positions[LOCATION_14F] = 60000;  
+      positions[LOCATION_LOBBY] = 0; //load_location(LOCATION_LOBBY);
+      positions[LOCATION_13F] = 13000; //load_location(LOCATION_13F);
+      positions[LOCATION_14F] = 24000; //load_location(LOCATION_14F);
+    }
+
+    int32_t load_location(uint8_t location_id) {
+      int32_t ret;
+      EEPROM.get(location_id * sizeof(int32_t), ret);
+      return ret;
+    }
+
+    int32_t save_location(uint8_t location_id, int32_t position) {
+      EEPROM.put(location_id, position);
     }
 
     bool calibrated()
@@ -88,8 +100,26 @@ class Elevator
       return ret;
     }
 
+    void set_mode(uint8_t new_mode) {
+      switch (new_mode) {
+        case MODE_MAINTENANCE:
+          open();
+          susan.stop(true);
+          break;
+
+        case MODE_ONLINE:
+          susan.stop(true);
+          break;
+
+        case MODE_OFFLINE:
+          goto_destination(LOCATION_LOBBY);
+          open();
+          break;
+      }
+    }
+
     // hella blocking
-    void calibrate(bool with_floor = false)
+    void calibrate()
     {
       shell_printf("Starting elevator calibration\r\n");
       d1.calibrate();
@@ -98,13 +128,14 @@ class Elevator
       d2.open();
       doors_state = DOOR_OPEN;
       if (with_floor) {
+        shell_printf("Calibrating floor\r\n");
         susan.calibrate();
         floor_state = FLOOR_STATIONARY;
         destination_id = LOCATION_LOBBY;
         destination_pos = 0;
         origin_pos = 0;
       }
-      
+      mode = MODE_ONLINE;
       shell_printf("Elevator calibrated\r\n");
     }
 
@@ -201,7 +232,8 @@ void on_rx_button_event(event_button_t * evt)
   uint8_t button_id = evt->button & 0x0F;
 
   if (button_id == BTN_BELL) {
-    if (event_id == BTN_HOLD) {
+    if (event_id == BTN_HOLD && evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_13 && evt->all_buttons & BTN_14) {
+      elevator.mode = MODE_MAINTENANCE;
 //      if (!elevator.homing_done) {
 //          tx_msg(MSG_HOME, NULL, 0);
 //          delay(100);
@@ -295,8 +327,8 @@ void setup() {
   // board id
   pinMode(15, INPUT);
   is_outer = digitalRead(15) == HIGH;
-  // UNCOMMENT THIS
-  //elevator.with_floor = is_outer;
+  
+  elevator.with_floor = true; //is_outer;
 
   // b2b comms
   Serial1.begin(9600);
@@ -436,7 +468,7 @@ int command_info(int argc, char ** argv)
 {
   bool outer = digitalRead(15) == HIGH;
   //shell_printf("Board id: %s\r\n", outer ? "OUTER" : "INNER");
-  shell_printf("F: %d %s   D1: %d %s   D2: %d %s  D: %d\r\n", 
+  shell_printf("F: %d %s   D1: %d %s   D2: %d %s  D: %d\r\n",  
     elevator.susan.s.getPosition(), elevator.susan.sc.isRunning() ? "RUNNING" : "IDLE",
     elevator.d1.s.getPosition(), elevator.d1.sc.isRunning() ? "RUNNING" : "IDLE",
     elevator.d2.s.getPosition(), elevator.d2.sc.isRunning() ? "RUNNING" : "IDLE",
@@ -465,7 +497,9 @@ int command_home(int argc, char ** argv)
 
 int command_test(int argc, char ** argv)
 {
-  playBackground.play("LEVEL0.RAW");
+  elevator.goto_destination(LOCATION_13F);
+  
+  //playBackground.play("LEVEL0.RAW");
 //  elevator.calibrate();
 //  elevator.susan.rotate(true);
   
