@@ -131,6 +131,15 @@ class MotorAndSwitches
         pending_goto = false;
         goto_pos(pending_pos);
       }
+      if (rc.isRunning()) {
+        if (sw1_hit() ){
+          s.setPosition(0);
+          stop(true);
+        }
+        if (sw2_hit()) {
+          stop(true);
+        }
+      }
     }
 };
 
