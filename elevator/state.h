@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 enum {
-  MODE_NOT_CONNECTED = 0,
+  MODE_NOT_CALIBRATED = 0,
   MODE_MAINTENANCE,
   MODE_ONLINE,
   MODE_OFFLINE

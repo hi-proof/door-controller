@@ -68,13 +68,17 @@ class Elevator
 
     int32_t positions[LOCATION_COUNT];
 
+    bool just_arrived;
+
     Elevator(bool with_floor=false)
     : rc(25),
       susan(34, 33, 35, 36, rc), // port A
       d1(38, 37, 39, 32, rc),    // port B
       d2(30, 31, 28, 29, rc),    // port C
       with_floor(with_floor),
-      doors_state(DOOR_NOT_CALIBRATED)
+      doors_state(DOOR_NOT_CALIBRATED),
+      mode(MODE_NOT_CALIBRATED),
+      floor_state(FLOOR_NOT_CALIBRATED)
     {
       positions[LOCATION_LOBBY] = 0; //load_location(LOCATION_LOBBY);
       positions[LOCATION_13F] = 13000; //load_location(LOCATION_13F);
@@ -205,8 +209,13 @@ class Elevator
         }
       }
 
-      // TODO: same as above for floor
-  
+      just_arrived = false;
+      if (floor_state == FLOOR_MOVING) {
+        if (!susan.sc.isRunning()) {
+          floor_state = FLOOR_STATIONARY;
+          just_arrived = true;
+        }
+      }
     }
 };
 
@@ -230,6 +239,12 @@ void on_rx_button_event(event_button_t * evt)
 {
   uint8_t event_id = evt->button & 0xF0 >> 4;
   uint8_t button_id = evt->button & 0x0F;
+
+//  switch (elevator.mode) {
+//    //case MODE_
+//  }
+//
+//  if (button_id == BTN_BELL && event_id == BTN_HOLD && 
 
   if (button_id == BTN_BELL) {
     if (event_id == BTN_HOLD && evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_13 && evt->all_buttons & BTN_14) {
@@ -259,11 +274,6 @@ void on_rx_button_event(event_button_t * evt)
 
 void on_rx_outer(const uint8_t* buffer, size_t size)
 {
-  // we're totally connected now. yay
-  if (outer_state.system_mode == MODE_NOT_CONNECTED) {
-    outer_state.system_mode = MODE_ONLINE;
-  }
-  
   switch (buffer[0]) {
     case MSG_INNER_STATE:
       memcpy(&inner_state, buffer[1], sizeof(inner_state));
@@ -326,9 +336,9 @@ void on_rx(const uint8_t* buffer, size_t size)
 void setup() {
   // board id
   pinMode(15, INPUT);
-  is_outer = digitalRead(15) == HIGH;
+  is_outer = true; //digitalRead(15) == HIGH;
   
-  elevator.with_floor = true; //is_outer;
+  elevator.with_floor = is_outer;
 
   // b2b comms
   Serial1.begin(9600);
@@ -379,6 +389,10 @@ void process_outer()
     tx_msg(MSG_HOME, NULL, 0);
     delay(50);
     elevator.calibrate();
+  }
+
+  if (elevator.just_arrived) {
+    shell_printf("Just arrived at location ID: %d, should play ding now\r\n", elevator.destination_id);
   }
 
   // elevator position handling for ambiance changes
@@ -468,7 +482,8 @@ int command_info(int argc, char ** argv)
 {
   bool outer = digitalRead(15) == HIGH;
   //shell_printf("Board id: %s\r\n", outer ? "OUTER" : "INNER");
-  shell_printf("F: %d %s   D1: %d %s   D2: %d %s  D: %d\r\n",  
+  shell_printf("F: %d %d %s   D1: %d %s   D2: %d %s  D: %d\r\n",  
+    elevator.floor_state,
     elevator.susan.s.getPosition(), elevator.susan.sc.isRunning() ? "RUNNING" : "IDLE",
     elevator.d1.s.getPosition(), elevator.d1.sc.isRunning() ? "RUNNING" : "IDLE",
     elevator.d2.s.getPosition(), elevator.d2.sc.isRunning() ? "RUNNING" : "IDLE",
