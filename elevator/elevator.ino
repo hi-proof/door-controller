@@ -387,12 +387,15 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
       elevator.close();
       break;
       
-    case MSG_HOME: 
+    case MSG_HOME:
       // blocking
       //elevator.home_doors();
       break;
       
     case MSG_UI_OVERRIDE: break;
+
+    case MSG_TRIGGER_TRANSITION:
+      break;
   } 
 }
 
@@ -533,11 +536,11 @@ void process_outer()
       float relative_position = (current_position - elevator.origin_pos) / (float)(elevator.destination_pos - elevator.origin_pos);
       // check if we crossed the trigger point
       if (relative_position > target->relative_position) {
-        shell_printf("Triggered transition to %d, position %d, origin %d, relative: %0.4f\r\n",
+        shell_printf("Triggered transition to %d, position %d, origin %d, relative: %d\r\n",
                     elevator.destination_id,
                     current_position,
                     elevator.origin_pos,
-                    relative_position);
+                    (int)(relative_position*100));
         // mark triggered
         currentTransition = target;
         // inform the inside part of the trigger
@@ -660,7 +663,31 @@ int command_home(int argc, char ** argv)
 
 int command_test(int argc, char ** argv)
 {
-  elevator.goto_destination(LOCATION_13F);
+  //elevator.goto_destination(LOCATION_13F);
+    static int index = 0;
+  //playBackground.play("LEVEL0.RAW");
+  switch(index){
+    case 0:
+      elevator.goto_destination(LOCATION_13F);
+      break;
+    case 1:
+      elevator.goto_destination(LOCATION_14F);
+      break;
+    case 2:
+      elevator.goto_destination(LOCATION_13F);
+      break;
+    case 3:
+      elevator.goto_destination(LOCATION_LOBBY);
+      break;
+    case 4:
+      elevator.goto_destination(LOCATION_14F);
+      break;
+    case 5:
+      elevator.goto_destination(LOCATION_LOBBY);
+      break;
+  }
+  index = (index + 1) % 6;
+
   
   //playBackground.play("LEVEL0.RAW");
 //  elevator.calibrate();
