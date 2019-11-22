@@ -1,6 +1,7 @@
 #pragma once
 #include "Bounce2.h"
 #include "state.h"
+#include "pins.h"
 
 //--------------------------------------------------------------------------------------
 // Shift register based inputs & outputs
@@ -256,7 +257,7 @@ class FancyButton
     {
     }
 
-    void update(void (*on_clicked)() = NULL, void (*on_held)() = NULL) {
+    void update_inputs(void (*on_clicked)() = NULL, void (*on_held)() = NULL) {
       held = false;
       clicked = false;
       pressed = input.fell();
@@ -282,9 +283,12 @@ class FancyButton
       if (input.rose()) {
         held_called = false;
       }
+    }
 
+    void update_outputs()
+    {
       bool is_on = on || (on_on_press && input.read() == LOW);
-      out.write(is_on);
+      out.write(is_on);      
     }
 };
 
@@ -319,24 +323,27 @@ public:
       b6(ParallelBounce(buttons, 6), ParallelOutputPin(button_leds, 5), BTN_OPEN),
       sseg(sseg)
   {
-//    FancyButton& button_star = b1;
-//    FancyButton& button_13f = b2;
-//    FancyButton& button_14f = b3;
-//    FancyButton& button_bell = b4;
-//    FancyButton& button_close = b5;
-//    FancyButton& button_open = b6;
-//    FancyButton& button_call = b1;
   }
 
-  void update()
+  void update_inputs()
   {
-    b1.update();
-    b2.update();
-    b3.update();
-    b4.update();
-    b5.update();
-    b6.update();
+    b1.update_inputs();
+    b2.update_inputs();
+    b3.update_inputs();
+    b4.update_inputs();
+    b5.update_inputs();
+    b6.update_inputs();
   } 
+
+  void update_outputs()
+  {
+    b1.update_outputs();
+    b2.update_outputs();
+    b3.update_outputs();
+    b4.update_outputs();
+    b5.update_outputs();
+    b6.update_outputs();    
+  }
 
   uint8_t buttons_state()
   {
@@ -351,19 +358,10 @@ public:
   }
 };
 
-#define SW_DATA (26)
-#define SW_CLOCK (27)
-#define SW_LATCH (25)
 ParallelInputs buttons(SW_DATA, SW_CLOCK, SW_LATCH);
 
-#define BL_DATA   (24)
-#define BL_CLOCK  (12)
-#define BL_LATCH  (4)
 ParallelOutputs button_leds(BL_DATA, BL_CLOCK, BL_LATCH);
 
-#define SSEG_DATA (5)
-#define SSEG_CLOCK (6)
-#define SSEG_LATCH (7) 
 SSeg sseg(SSEG_DATA, SSEG_CLOCK, SSEG_LATCH);
 
 IOPanel panel(buttons, button_leds, sseg);

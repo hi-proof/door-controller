@@ -8,6 +8,7 @@
 #include <EEPROM.h>
 #include <FastLED.h>
 
+#include "pins.h"
 #include "parallelio.h"
 #include "state.h"
 #include "controllers.h"
@@ -85,6 +86,7 @@ class Elevator
     uint8_t doors_state;
     uint8_t floor_state;
 
+    uint8_t pending_dest_id;
     uint8_t destination_id;
     int32_t destination_pos;
     int32_t origin_pos;
@@ -123,7 +125,7 @@ class Elevator
     int32_t save_location(uint8_t location_id, int32_t position) {
       shell_printf("Saving location %d at %d\r\n", location_id, position);
       positions[location_id] = position;
-      EEPROM.put(location_id, position);
+      EEPROM.put(location_id * sizeof(int32_t), position);
     }
 
     bool calibrated()
@@ -145,6 +147,7 @@ class Elevator
           susan.stop(true);
           destination_id = 100;
           open();
+          tx_msg(MSG_OPEN, NULL, 0);
           break;
 
         case MODE_ONLINE:
@@ -225,7 +228,7 @@ class Elevator
         return;
       }
 
-      this->destination_id = destination_id;
+      this->pending_dest_id = destination_id;
       this->destination_pos = positions[destination_id];
       this->origin_pos = susan.s.getPosition();
 
@@ -259,17 +262,20 @@ class Elevator
       just_arrived = false;
       just_started = false;
 
-      if (floor_state == FLOOR_STATIONARY && mode == MODE_ONLINE && goto_pending) {
-        if ((doors_state == DOOR_CLOSED) && (inner_state.door_state == DOOR_CLOSED)) {
-          floor_state = FLOOR_MOVING;
-          susan.goto_pos(destination_pos);
-          goto_pending = false;
-          just_started = true;
-        }
-      } else if (floor_state == FLOOR_MOVING) {
-        if (!susan.sc.isRunning()) {
-          floor_state = FLOOR_STATIONARY;
-          just_arrived = true;
+      if (with_floor) {
+        if (floor_state == FLOOR_STATIONARY && mode == MODE_ONLINE && goto_pending) {
+          if ((doors_state == DOOR_CLOSED) && (inner_state.door_state == DOOR_CLOSED)) {
+            destination_id = pending_dest_id;
+            floor_state = FLOOR_MOVING;
+            susan.goto_pos(destination_pos);
+            goto_pending = false;
+            just_started = true;
+          }
+        } else if (floor_state == FLOOR_MOVING) {
+          if (!susan.sc.isRunning()) {
+            floor_state = FLOOR_STATIONARY;
+            just_arrived = true;
+          }
         }
       }
     }
@@ -324,6 +330,8 @@ void on_rx_button_event(event_button_t * evt)
           elevator.set_mode(MODE_MAINTENANCE);
         }
         else if ((evt->all_buttons & (1 << BTN_CLOSE)) && (evt->all_buttons & (1 << BTN_OPEN))) {
+          tx_msg(MSG_HOME, NULL, 0);
+          delay(100);
           elevator.calibrate();
         }
         else if (evt->all_buttons & (1 << BTN_OPEN)) {
@@ -360,7 +368,7 @@ void on_rx_button_event(event_button_t * evt)
 
     case MODE_OFFLINE:
       if (button_id == BTN_BELL && event_id == BTN_HOLD) {
-        if (evt->all_buttons & BTN_STAR && evt->all_buttons & BTN_OPEN) {
+        if ((evt->all_buttons & (1 << BTN_STAR)) && (evt->all_buttons & (1 << BTN_OPEN))) {
           elevator.set_mode(MODE_ONLINE);
         }
       }
@@ -445,19 +453,19 @@ struct Transitions {
     }
 
     if (background_volumes[0] > 0.02 && !playBackground1.isPlaying()) {
-      playBackground1.play("LEVEL0.RAW");
+      playBackground1.play("LEVEL12.RAW");
     } else if (background_volumes[0] < 0.02 && playBackground1.isPlaying()) {
       playBackground1.stop();
     }
 
     if (background_volumes[1] > 0.02 && !playBackground2.isPlaying()) {
-      playBackground2.play("LEVEL1.RAW");
+      playBackground2.play("LEVEL13.RAW");
     } else if (background_volumes[1] < 0.02 && playBackground2.isPlaying()) {
       playBackground2.stop();
     }
 
     if (background_volumes[2] > 0.02 && !playBackground3.isPlaying()) {
-      playBackground3.play("LEVEL2.RAW");
+      playBackground3.play("LEVEL14.RAW");
     } else if (background_volumes[2] < 0.02 && playBackground3.isPlaying()) {
       playBackground3.stop();
     }
@@ -521,8 +529,8 @@ void on_rx(const uint8_t* buffer, size_t size)
 
 void setup() {
   // board id
-  pinMode(15, INPUT);
-  is_outer = digitalRead(15) == HIGH;
+  pinMode(PIN_BOARD_ID, INPUT);
+  is_outer = digitalRead(PIN_BOARD_ID) == HIGH;
 
   elevator.with_floor = is_outer;
 
@@ -537,12 +545,11 @@ void setup() {
   shell_init(shell_reader, shell_writer, PSTR("Hi-Proof elevatormatic"));
 
   // LED indicator on teensy
-  pinMode(13, OUTPUT);
-  digitalWrite(13, HIGH);
+  pinMode(PIN_TEENSY_LED, OUTPUT);
+  digitalWrite(PIN_TEENSY_LED, HIGH);
 
-  pinMode(14, OUTPUT);
-  digitalWrite(14, HIGH);
-
+  pinMode(PIN_UV, OUTPUT);
+  digitalWrite(PIN_UV, LOW);
 
   shell_register(command_info, PSTR("i"));
   shell_register(command_home, PSTR("home"));
@@ -600,7 +607,20 @@ void process_outer()
   }
 
   if (panel.b1.clicked && elevator.mode == MODE_ONLINE) {
+    shell_printf("Call button pressed, processing\r\n");
     elevator.call_button_pressed = true;
+    if (elevator.destination_id == LOCATION_LOBBY) {
+      if (elevator.floor_state == FLOOR_STATIONARY) {
+        elevator.open();
+        tx_msg(MSG_OPEN, NULL, 0);
+      }
+    } else {
+      elevator.goto_destination(LOCATION_LOBBY);
+    }
+  }
+
+  if (elevator.destination_id == LOCATION_LOBBY && elevator.floor_state == FLOOR_STATIONARY) {
+    elevator.call_button_pressed = false;
   }
 
   if (elevator.just_arrived) {
@@ -680,10 +700,25 @@ void process_inner()
   send_button_events(panel.b5);
   send_button_events(panel.b6);
 
-  analogWrite(16, beatsin8(20));
-  analogWrite(17, beatsin8(30));
-  analogWrite(20, beatsin8(25));
-  analogWrite(21, beatsin8(17));
+  analogWrite(PIN_R, beatsin8(20));
+  analogWrite(PIN_G, beatsin8(30));
+  analogWrite(PIN_B, beatsin8(25));
+  analogWrite(PIN_W, beatsin8(17));    
+
+//  switch (elevator.mode) {
+//    case MODE_OFFLINE:    
+//      analogWrite(PIN_R, beatsin8(20));
+//      analogWrite(PIN_G, beatsin8(30));
+//      analogWrite(PIN_B, beatsin8(25));
+//      analogWrite(PIN_W, beatsin8(17));    
+//      break;
+//
+//    case MODE_NOT_CALIBRATED:
+//    case MODE_MAINTENANCE:
+//
+//    case MODE_ONLINE:
+//      break;  
+//  }
 
   // turn off all floor buttons if not moving
 
@@ -700,7 +735,13 @@ void do_ui()
       break;
     
     case MODE_ONLINE:
-      
+      panel.b1.on = false;
+      panel.b2.on = false;
+      panel.b3.on = false;
+      panel.b4.on = false;
+      panel.b5.on = false;
+      panel.b6.on = false;
+
       if (elevator.floor_state == FLOOR_STATIONARY) {
         switch (elevator.destination_id) {
           case LOCATION_LOBBY: sseg.set(SSeg::digit(1), SSeg::digit(2)); break;
@@ -708,29 +749,29 @@ void do_ui()
           case LOCATION_14F: sseg.set(SSeg::digit(1), SSeg::digit(4)); break;
           default: sseg.set(SSeg::character('-'), SSeg::character('-'));
         }
+
+        if (elevator.goto_pending) {
+          switch (elevator.pending_dest_id) {
+            case LOCATION_LOBBY: panel.b1.on = (millis() / 700) % 2 == 0; break;
+            case LOCATION_13F: panel.b2.on = (millis() / 700) % 2 == 0; break;
+            case LOCATION_14F: panel.b3.on = (millis() / 700) % 2 == 0; break;
+          }
+        }
       }
 
-      if (elevator.floor_state == FLOOR_MOVING || elevator.goto_pending) {
+      if (elevator.floor_state == FLOOR_MOVING) {
         switch (elevator.destination_id) {
           case LOCATION_LOBBY: panel.b1.on = (millis() / 700) % 2 == 0; break;
           case LOCATION_13F: panel.b2.on = (millis() / 700) % 2 == 0; break;
           case LOCATION_14F: panel.b3.on = (millis() / 700) % 2 == 0; break;
         }
-      } else {
-        panel.b1.on = false;
-        panel.b2.on = false;
-        panel.b3.on = false;
       }
-
+      
       // special case - blink the outside call button and let the inside of the elevator know
       // lobby is waiting
       if (elevator.call_button_pressed) {
         panel.b1.on = (millis() / 700) % 2 == 0;
-      }
-
-      panel.b5.on = false;
-      panel.b6.on = false;
-       
+      }       
       break;
 
     case MODE_MAINTENANCE:
@@ -744,6 +785,7 @@ void do_ui()
       break;
     
     case MODE_OFFLINE:
+      sseg.set(inoise8(millis() / 2), inoise8(millis() / 3));
       panel.b1.on = (millis() / 700) % 2 == 0;
       panel.b2.on = (millis() / 1300) % 2 == 0;
       panel.b3.on = (millis() / 500) % 2 == 0;
@@ -758,7 +800,7 @@ void loop() {
   // update inputs
   buttons.update();
   b2b_comms.update();
-  panel.update();
+  panel.update_inputs();
 
   // process
   shell_task();
@@ -774,6 +816,7 @@ void loop() {
   do_ui();
   
   // update outputs
+  panel.update_outputs();
   button_leds.update();
   sseg.update();
 

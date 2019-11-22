@@ -3,12 +3,12 @@
 #include <TeensyStep.h>
 
 const uint32_t HOMING_SPEED = 500;
-const uint32_t HOMING_ACCEL = 1500;
+const uint32_t HOMING_ACCEL = 500;
 
 const uint32_t DOOR_SPEED = 5000;
 const uint32_t DOOR_ACCEL = 1500;
 
-const uint32_t FLOOR_SPEED = 1200;
+const uint32_t FLOOR_SPEED = 1800;
 const uint32_t FLOOR_ACCEL = 700;
 
 enum {
@@ -185,40 +185,6 @@ class Door : public MotorAndSwitches
     {
       stop_and_goto_pos(closed_pos);
     }
-
-//    void homing_cycle(RotateControl& rc) {
-//      this->s.setAcceleration(HOMING_ACCEL);
-//
-//      // open first
-//      if (!sw1_hit()) {
-//        this->s.setMaxSpeed(-HOMING_SPEED);
-//        rc.rotateAsync(this->s);
-//        while (!sw1_hit());
-//        rc.stop();
-//      }
-//
-//      // reset the open position to 0
-//      this->s.setPosition(0);
-//      
-//      // We can end the homing cycle here if we don't want to measure the close position
-//      // this->pos_closed = 18000;
-//      // return;
-//
-//      this->s.setMaxSpeed(HOMING_SPEED);
-//      if (!sw2_hit()) {
-//        this->s.setMaxSpeed(HOMING_SPEED);
-//        rc.rotateAsync(this->s);
-//        while (!sw2_hit());
-//        rc.stop();
-//      }
-
-//      // motor is now is now in the closed position
-//      // TODO
-//      //this->pos_closed = this->s.getPosition();
-//
-//      this->s.setMaxSpeed(this->motor_speed);
-//      this->s.setAcceleration(this->motor_accel);
-//    }
 };
 
 
@@ -244,28 +210,4 @@ class Floor : public MotorAndSwitches
       calibrated = true;
     }
 
-//
-//    void goto_position(StepControl& sc, int32_t pos) {
-//      sc.stop();
-//      s.setMaxSpeed(motor_speed);
-//      s.setAcceleration(motor_accel);
-//      s.setTargetAbs(pos);
-//      sc.moveAsync(s);
-//    }
-//
-//    void go(RotateControl& rc)
-//    {
-//       rc.stop();
-//       s.setMaxSpeed(HOMING_SPEED);
-//       s.setAcceleration(HOMING_ACCEL);
-//       rc.rotateAsync(s);
-//    }
-//
-//    void back(RotateControl& rc)
-//    {
-//       rc.stop();
-//       s.setMaxSpeed(-HOMING_SPEED);
-//       s.setAcceleration(HOMING_ACCEL);
-//       rc.rotateAsync(s);
-//    }
 };
