@@ -317,16 +317,22 @@ void on_rx_button_event(event_button_t * evt)
       }
       if (button_id == BTN_STAR && event_id == BTN_HOLD) {
         elevator.save_location(LOCATION_LOBBY, elevator.susan.s.getPosition());
+        tx_msg(MSG_DING, NULL, 0);
       }
       if (button_id == BTN_13 && event_id == BTN_HOLD) {
         elevator.save_location(LOCATION_13F, elevator.susan.s.getPosition());
+        tx_msg(MSG_DING, NULL, 0);
       }
       if (button_id == BTN_14 && event_id == BTN_HOLD) {
         elevator.save_location(LOCATION_14F, elevator.susan.s.getPosition());
+        tx_msg(MSG_DING, NULL, 0);
       }
       break;
 
     case MODE_ONLINE:
+      if (button_id == BTN_BELL && event_id == BTN_PRESS) {
+        tx_msg(MSG_DING, NULL, 0);
+      }
       if (button_id == BTN_BELL && event_id == BTN_HOLD) {
         if ((evt->all_buttons & (1 << BTN_STAR)) && (evt->all_buttons & (1 << BTN_13)) && (evt->all_buttons & (1 << BTN_14))) {
           elevator.set_mode(MODE_MAINTENANCE);
@@ -375,14 +381,18 @@ void on_rx_button_event(event_button_t * evt)
         }
       }
 
-//      if (button_id == BTN_CLOSE && event_id == BTN_PRESS) {
-//        av_mode = (av_mode + 1) % AV_MODES_COUNT;
-//        tx_msg(MSG_AVMODE, (uint8_t*)&av_mode, 1);
-//      }
-//      if (button_id == BTN_OPEN && event_id == BTN_PRESS) {
-//        av_mode = (av_mode - 1) % AV_MODES_COUNT;
-//        tx_msg(MSG_AVMODE, (uint8_t*)&av_mode, 1);
-//      }
+      if (button_id == BTN_BELL && event_id == BTN_PRESS) {
+        tx_msg(MSG_DING, NULL, 0);
+      }
+
+      if (button_id == BTN_CLOSE && event_id == BTN_PRESS) {
+        av_mode = (av_mode + 1) % AV_MODES_COUNT;
+        tx_msg(MSG_AVMODE, (uint8_t*)&av_mode, 1);
+      }
+      if (button_id == BTN_OPEN && event_id == BTN_PRESS) {
+        av_mode = (av_mode - 1) % AV_MODES_COUNT;
+        tx_msg(MSG_AVMODE, (uint8_t*)&av_mode, 1);
+      }
 
       break;
 
@@ -807,7 +817,8 @@ void process_inner()
   switch (elevator.mode) {
     // offline mode - just rainbowy stuff
     case MODE_OFFLINE:
-      do_av(AV_RAINBOW);
+      //do_av(AV_RAINBOW);
+      do_av(av_mode);
       break;
 
     // flashing blue
