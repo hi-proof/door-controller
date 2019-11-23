@@ -36,6 +36,7 @@ enum {
   MSG_UI_OVERRIDE,
   MSG_TRIGGER_TRANSITION,
   MSG_DING,
+  MSG_AVMODE,
 };
 
 enum {
@@ -72,6 +73,19 @@ enum {
 enum {
   FLAG_CALL_BUTTON_PENDING,
   FLAG_GOTO_PENDING,
+};
+
+enum
+{
+  AV_LOBBY,
+  AV_GLITCHY,
+  AV_LAB,
+  AV_SPACE,
+  AV_RAINBOW,
+  AV_FLASHING_BLUE,
+  AV_FIRE,
+  //--------
+  AV_MODES_COUNT
 };
 
 #pragma pack(push, 1)

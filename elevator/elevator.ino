@@ -47,8 +47,8 @@ AudioConnection          patchCord11(mixerBottom, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=528,191
 // GUItool: end automatically generated code
 
-
 //--------------------------------------------------------------------------
+
 
 PacketSerial b2b_comms;
 uint32_t last_tx;
@@ -58,6 +58,7 @@ inner_state_t inner_state;
 outer_state_t outer_state;
 
 bool is_outer;
+uint8_t av_mode = AV_LOBBY;
 
 void tx_msg(uint8_t msg, uint8_t * buffer, uint8_t size) {
   static uint8_t msg_buffer[255];
@@ -158,6 +159,7 @@ class Elevator
           susan.stop(true);
           goto_destination(LOCATION_LOBBY);
           open();
+          tx_msg(MSG_OPEN, NULL, 0);
           break;
       }
     }
@@ -372,6 +374,16 @@ void on_rx_button_event(event_button_t * evt)
           elevator.set_mode(MODE_ONLINE);
         }
       }
+
+//      if (button_id == BTN_CLOSE && event_id == BTN_PRESS) {
+//        av_mode = (av_mode + 1) % AV_MODES_COUNT;
+//        tx_msg(MSG_AVMODE, (uint8_t*)&av_mode, 1);
+//      }
+//      if (button_id == BTN_OPEN && event_id == BTN_PRESS) {
+//        av_mode = (av_mode - 1) % AV_MODES_COUNT;
+//        tx_msg(MSG_AVMODE, (uint8_t*)&av_mode, 1);
+//      }
+
       break;
 
   }
@@ -504,10 +516,25 @@ void on_rx_inner(const uint8_t* buffer, size_t size)
     case MSG_TRIGGER_TRANSITION:
       // start transition to target floor
       transitions.start_transition(buffer[1]);
+      switch (buffer[1]) {
+        case LOCATION_LOBBY:
+          av_mode = AV_LOBBY;
+          break;
+        case LOCATION_13F:
+          av_mode = AV_LAB;
+          break;
+        case LOCATION_14F:
+          av_mode = AV_SPACE;
+          break;
+      }
       break;
 
     case MSG_DING:
       playDings.play(AudioSampleDing);
+      break;
+
+    case MSG_AVMODE:
+      av_mode = buffer[1];
       break;
   }
 }
@@ -557,26 +584,28 @@ void setup() {
   shell_register(command_open, PSTR("open"));
   shell_register(command_close, PSTR("close"));
 
-//  AudioMemory(100);
-//  shell_printf("Opening SD...");
-//  if (!SD.begin(BUILTIN_SDCARD)) {
-//    shell_printf("Error opening SD\r\n");
-//  } else {
-//    shell_printf("Done\r\n");
-//  }
-//
-//  sgtl5000_1.enable();
-//  sgtl5000_1.volume(1.0);
-//
-//  mixerTop.gain(0, 1.0);
-//  mixerTop.gain(1, 1.0);
-//  mixerTop.gain(2, 1.0);
-//  mixerTop.gain(3, 1.0);
-//
-//  mixerBottom.gain(0, 1.0);
-//  mixerBottom.gain(1, 1.0);
-//  mixerBottom.gain(2, 1.0);
-//  mixerBottom.gain(3, 1.0);
+  if (!is_outer) {
+    AudioMemory(100);
+    shell_printf("Opening SD...");
+    if (!SD.begin(BUILTIN_SDCARD)) {
+      shell_printf("Error opening SD\r\n");
+    } else {
+      shell_printf("Done\r\n");
+    }
+  
+    sgtl5000_1.enable();
+    sgtl5000_1.volume(1.0);
+  
+    mixerTop.gain(0, 1.0);
+    mixerTop.gain(1, 1.0);
+    mixerTop.gain(2, 1.0);
+    mixerTop.gain(3, 1.0);
+  
+    mixerBottom.gain(0, 1.0);
+    mixerBottom.gain(1, 1.0);
+    mixerBottom.gain(2, 1.0);
+    mixerBottom.gain(3, 1.0);
+  }
 }
 
 // relative to motion length, so 1.0 is at motion's end
@@ -690,6 +719,75 @@ void send_button_events(FancyButton& b) {
   }
 }
 
+void RGBW(uint8_t r, uint8_t g, uint8_t b, uint8_t w) 
+{
+    analogWrite(PIN_R, r);
+    analogWrite(PIN_G, g);
+    analogWrite(PIN_B, b);
+    analogWrite(PIN_W, w);
+}
+
+void UV(bool on) 
+{
+  digitalWrite(PIN_UV, on ? HIGH : LOW);
+}
+
+void do_av(uint8_t mode)
+{
+  bool pending_transition = false;
+  static uint32_t pending_transition_time = 0;
+
+  switch (mode) {
+    case AV_LOBBY:
+      RGBW(0, 0, 0, 255);
+      UV(false);
+      break;
+    
+    case AV_GLITCHY: {
+      static uint8_t glitch = 0;
+      if (random(100) < 5) {
+        glitch = random(150, 250);
+      }
+      RGBW(glitch, 0, 0, 255 - glitch);
+      if (glitch > 0) {
+        glitch--;
+      }
+      UV(false);
+      }
+    break;
+    
+    case AV_LAB:
+      RGBW(beatsin8(40), 0, 0, 0);
+      UV(true);
+      break;
+    
+    case AV_SPACE:
+      RGBW(0, beatsin8(20), beatsin8(40), 0);
+      UV(true);
+      break;
+
+    case AV_RAINBOW:
+      RGBW(
+        beatsin8(20),
+        beatsin8(30),
+        beatsin8(25),
+        beatsin8(17)
+      );
+      UV(true);
+      break;
+
+     case AV_FLASHING_BLUE:
+        RGBW(0, 0, beatsin8(20), 100);
+        UV(true);
+        break;
+
+     case AV_FIRE:
+        RGBW(inoise8(millis() / 3), 0, 0, inoise8(millis()));
+        UV(false);
+        break;
+  }
+}
+
 void process_inner()
 {
   // send key press events
@@ -700,25 +798,27 @@ void process_inner()
   send_button_events(panel.b5);
   send_button_events(panel.b6);
 
-  analogWrite(PIN_R, beatsin8(20));
-  analogWrite(PIN_G, beatsin8(30));
-  analogWrite(PIN_B, beatsin8(25));
-  analogWrite(PIN_W, beatsin8(17));    
+//  analogWrite(PIN_R, beatsin8(20));
+//  analogWrite(PIN_G, beatsin8(30));
+//  analogWrite(PIN_B, beatsin8(25));
+//  analogWrite(PIN_W, beatsin8(17));    
 
-//  switch (elevator.mode) {
-//    case MODE_OFFLINE:    
-//      analogWrite(PIN_R, beatsin8(20));
-//      analogWrite(PIN_G, beatsin8(30));
-//      analogWrite(PIN_B, beatsin8(25));
-//      analogWrite(PIN_W, beatsin8(17));    
-//      break;
-//
-//    case MODE_NOT_CALIBRATED:
-//    case MODE_MAINTENANCE:
-//
-//    case MODE_ONLINE:
-//      break;  
-//  }
+  switch (elevator.mode) {
+    // offline mode - just rainbowy stuff
+    case MODE_OFFLINE:
+      do_av(AV_RAINBOW);
+      break;
+
+    // flashing blue
+    case MODE_NOT_CALIBRATED:
+    case MODE_MAINTENANCE:
+      do_av(AV_FLASHING_BLUE);
+      break;
+
+    case MODE_ONLINE:
+      do_av(av_mode);
+      break;  
+  }
 
   // turn off all floor buttons if not moving
 
@@ -750,13 +850,13 @@ void do_ui()
           default: sseg.set(SSeg::character('-'), SSeg::character('-'));
         }
 
-        if (elevator.goto_pending) {
-          switch (elevator.pending_dest_id) {
-            case LOCATION_LOBBY: panel.b1.on = (millis() / 700) % 2 == 0; break;
-            case LOCATION_13F: panel.b2.on = (millis() / 700) % 2 == 0; break;
-            case LOCATION_14F: panel.b3.on = (millis() / 700) % 2 == 0; break;
-          }
-        }
+//        if (elevator.goto_pending) {
+//          switch (elevator.pending_dest_id) {
+//            case LOCATION_LOBBY: panel.b1.on = (millis() / 700) % 2 == 0; break;
+//            case LOCATION_13F: panel.b2.on = (millis() / 700) % 2 == 0; break;
+//            case LOCATION_14F: panel.b3.on = (millis() / 700) % 2 == 0; break;
+//          }
+//        }
       }
 
       if (elevator.floor_state == FLOOR_MOVING) {
@@ -785,7 +885,7 @@ void do_ui()
       break;
     
     case MODE_OFFLINE:
-      sseg.set(inoise8(millis() / 2), inoise8(millis() / 3));
+      sseg.set((millis() / 100) & 0xFF, (millis() / 200) & 0xFF);
       panel.b1.on = (millis() / 700) % 2 == 0;
       panel.b2.on = (millis() / 1300) % 2 == 0;
       panel.b3.on = (millis() / 500) % 2 == 0;
@@ -865,14 +965,16 @@ int command_close(int argc, char ** argv)
 
 int command_home(int argc, char ** argv)
 {
+  tx_msg(MSG_HOME, NULL, 0);
+  delay(50);
   elevator.calibrate();
   return SHELL_RET_SUCCESS;
 }
 
 int command_test(int argc, char ** argv)
 {
-  elevator.susan.rotate(true);
-  delay(1000);
+//  elevator.susan.rotate(true);
+//  delay(1000);
   //playBackground1.play("LEVEL0.RAW");
   //elevator.goto_destination(LOCATION_13F);
   // test ding

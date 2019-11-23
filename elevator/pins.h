@@ -17,8 +17,8 @@ enum {
   PIN_TEENSY_LED = 13,
 
   PIN_UV = 14,
-  PIN_R = 16,
-  PIN_G = 17,
+  PIN_R = 17,
+  PIN_G = 16,
   PIN_B = 20,
   PIN_W = 21,
 };
