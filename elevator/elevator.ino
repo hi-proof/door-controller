@@ -643,8 +643,9 @@ void process_outer()
         elevator.open();
         tx_msg(MSG_OPEN, NULL, 0);
       }
-    } else {
-      elevator.goto_destination(LOCATION_LOBBY);
+      // Commenting this out on day two
+//    } else {
+//      elevator.goto_destination(LOCATION_LOBBY);
     }
   }
 
