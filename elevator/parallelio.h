@@ -182,6 +182,12 @@ class ParallelBounce : public Bounce {
       this->attach(pin);
     }
 
+    ParallelBounce(const ParallelBounce& p2) 
+    : pi(p2.pi)
+    {
+      this->attach(p2.pin);
+    }
+
     virtual bool readCurrentState() {
       return this->pi.read(this->pin);
       return 0;
@@ -215,10 +221,16 @@ class OutputPinBase
 };
 
 class ParallelOutputPin : public OutputPinBase {
-  ParallelOutputs& po;
   
   public:
+    ParallelOutputs& po;
+  
     ParallelOutputPin(ParallelOutputs& po, uint8_t pin) : po(po), OutputPinBase(pin)
+    {
+    }
+
+    ParallelOutputPin(const ParallelOutputPin &p2)
+    : po(p2.po), OutputPinBase(p2.pin)
     {
     }
 
