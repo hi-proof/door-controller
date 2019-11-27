@@ -675,6 +675,7 @@ void process_outer()
     }
   }
 
+
   if (elevator.destination_id == LOCATION_LOBBY && elevator.floor_state == FLOOR_STATIONARY) {
     elevator.call_button_pressed = false;
   }
@@ -719,6 +720,7 @@ void process_outer()
       }
     }
   } else {
+
     // not moving
     transition_target = elevator.destination_id;
   }
@@ -727,6 +729,7 @@ void process_outer()
 void send_button_events(FancyButton& b) {
   event_button_t button_event;
   button_event.all_buttons = panel.buttons_state();
+
 
   if (b.pressed) {
     button_event.button = b.button_id | (BTN_PRESS << 4);
@@ -814,6 +817,7 @@ void do_av(uint8_t mode)
         break;
   }
 }
+
 
 void FillLEDsFromPaletteColors(CRGBPalette16 &palette, uint8_t colorIndex, uint8_t step) {    
     for( int i = 0; i < NUM_LEDS; i++, colorIndex+=step) {
@@ -940,6 +944,7 @@ void loop() {
   buttons.update();
   b2b_comms.update();
   panel.update_inputs();
+
 
   // process
   shell_task();
@@ -1078,4 +1083,30 @@ void shell_writer(char data)
 {
   // Wrapper for Serial.write() method
   Serial.write(data);
+}
+
+//////////////////// network code /////////////////////
+
+enum packet_type {
+  ELEVATOR_TO_OUTSIDE = 0,
+  SCREEN_UPDATE,
+  PACKET_TYPES
+};
+
+void update_screen(const struct screen_update_packet_t * screen_update) {
+  sseg.values[0] = SSeg::digit(screen_update->digit_1);
+  sseg.values[1] = SSeg::digit(screen_update->digit_2);
+}
+
+void onPacketReceived(const uint8_t* buffer, size_t size)
+{
+    switch((packet_type)buffer[0]) {
+      case ELEVATOR_TO_OUTSIDE:
+        // TODO: compare current state to previous state, see if we need to get motor running etc.
+        //
+        // resolve_state((elevator_to_outside_packet_t *)buffer);
+        break;
+      case SCREEN_UPDATE:
+        update_screen((const screen_update_packet_t *)buffer);
+    }
 }
