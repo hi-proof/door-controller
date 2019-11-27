@@ -50,6 +50,18 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=528,191
 //--------------------------------------------------------------------------
 
 
+WS2812Serial *pserial;
+uint8_t *drawbuffer,*framebuffer;
+
+void init_leds(int nLeds) {
+  if (pserial == NULL) {
+    drawbuffer = (uint8_t*)malloc(nLeds * 3);
+    framebuffer = (uint8_t*)malloc(nLeds * 12);
+    pserial = new WS2812Serial(nLeds, framebuffer, drawbuffer, DATA_PIN, WS2812_RGB);
+    pserial->begin();
+  }
+}
+
 PacketSerial b2b_comms;
 uint32_t last_tx;
 uint32_t last_rx;
@@ -615,6 +627,10 @@ void setup() {
     mixerBottom.gain(1, 1.0);
     mixerBottom.gain(2, 1.0);
     mixerBottom.gain(3, 1.0);
+
+
+    LEDS.addLeds<WS2812SERIAL>(leds, NUM_LEDS_PER_STRIP)
+    
   }
 }
 
@@ -799,6 +815,12 @@ void do_av(uint8_t mode)
   }
 }
 
+void FillLEDsFromPaletteColors(CRGBPalette16 &palette, uint8_t colorIndex, uint8_t step) {    
+    for( int i = 0; i < NUM_LEDS; i++, colorIndex+=step) {
+        leds[i] = ColorFromPalette( palette, colorIndex, 255, LINEARBLEND);
+    }
+}
+
 void process_inner()
 {
   // send key press events
@@ -813,6 +835,8 @@ void process_inner()
 //  analogWrite(PIN_G, beatsin8(30));
 //  analogWrite(PIN_B, beatsin8(25));
 //  analogWrite(PIN_W, beatsin8(17));    
+
+  FastLED.clear();
 
   switch (elevator.mode) {
     // offline mode - just rainbowy stuff
@@ -829,10 +853,13 @@ void process_inner()
 
     case MODE_ONLINE:
       do_av(av_mode);
+      if (elevator.floor_state = FLOOR_MOVING) {
+        FillLEDsFromPaletteColors(palette, start, step);
+      }
       break;  
   }
 
-  // turn off all floor buttons if not moving
+  FastLED.show();
 
   inner_state.door_state = elevator.doors_state;
   // audio

@@ -190,7 +190,6 @@ class ParallelBounce : public Bounce {
 
     virtual bool readCurrentState() {
       return this->pi.read(this->pin);
-      return 0;
     }
 
     virtual void setPinMode(int pin, int mode) {
